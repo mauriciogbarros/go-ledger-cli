@@ -186,7 +186,7 @@ type Storage interface {
 type Account struct {
     ID      AccountID
     Name    string
-    balance float64
+    balance Currency
 }
 ```
 
@@ -195,7 +195,7 @@ type Account struct {
 type Transaction struct {
     ID        string
     Type      string
-    Amount    float64
+    Amount    Currency
     From      AccountID
     To        AccountID
     Timestamp time.Time
