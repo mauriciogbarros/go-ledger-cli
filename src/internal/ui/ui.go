@@ -1,28 +1,39 @@
 package ui
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
+	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.mod/internal/account"
+	"go.mod/internal/chart"
 	"go.mod/internal/journal"
 )
 
-func MenuNewAccount() (string, int, error) {
-	var name string
+var reader = bufio.NewReader(os.Stdin)
+
+func MenuNewAccountName() (string, error) {
 	fmt.Print("Account name: ")
-	_, err := fmt.Scanf("%s", &name)
+	name, err := reader.ReadString('\n')
 	if err != nil {
-		return "", 0, err
+		return "", err
 	}
 	if len(name) == 0 {
-		return "", 0, errors.New("Account name cannot be empty")
+		return "", errors.New("Account name cannot be empty")
 	}
 	if len(name) > account.MaxNameLength {
-		return "", 0, fmt.Errorf("Account name too long (max %d characters)", account.MaxNameLength)
+		return "", fmt.Errorf("Account name too long (max %d characters)", account.MaxNameLength)
 	}
-	var choice int
+
+	return name, nil
+}
+
+func MenuNewAccountType() (int, error) {
 	fmt.Println("Choose the account type:")
 	fmt.Println("1. Asset")
 	fmt.Println("2. Liability")
@@ -31,15 +42,21 @@ func MenuNewAccount() (string, int, error) {
 	fmt.Println("5. Expense")
 	fmt.Println("────────────────────────")
 	fmt.Print("Choice: ")
-	_, err = fmt.Scanf("%d", &choice)
+
+	input, err := reader.ReadString('\n')
 	if err != nil {
-		return "", 0, err
+		return 0, err
+	}
+	input = strings.TrimSpace(input)
+	choice, err := strconv.Atoi(input)
+	if err != nil {
+		return 0, errors.New("Invalid input")
 	}
 	if choice < 1 || choice > 5 {
-		return "", 0, errors.New("Invalid account type")
+		return 0, errors.New("Invalid account type")
 	}
 
-	return name, choice, nil
+	return choice, nil
 }
 
 func DisplayJournal(journal journal.Journal, fromDate time.Time, toDate time.Time) {
@@ -48,6 +65,43 @@ func DisplayJournal(journal journal.Journal, fromDate time.Time, toDate time.Tim
 	// TODO: implement date filter
 }
 
-func DisplayAccounts(accounts []account.Account) {
-	
+func MenuGetAccount(chart *chart.ChartOfAccounts) (int, error) {
+	accounts := chart.GetAccounts()
+	width := 1 + 3 + 3 + account.MaxNameLength + 3 + 9 + 1
+	fmt.Println("Accounts")
+	fmt.Println(strings.Repeat("─", width))
+	var refs []int
+	for _, account := range accounts {
+		refs = append(refs, account.GetRef())
+		fmt.Println(account.String())
+	}
+	fmt.Println(strings.Repeat("─", width))
+	fmt.Print("Enter account Ref: ")
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return 0, err
+	}
+	input = strings.TrimSpace(input)
+	ref, err := strconv.Atoi(input)
+	if err != nil {
+		return 0, err
+	}
+	index := slices.Index(refs, ref)
+	if index < 0 {
+		return 0, errors.New("Invalid account reference")
+	}
+	return ref, nil
+}
+
+func MenuGetExplanation() (string, error) {
+	fmt.Print("Explanation: ")
+	explanation, err := reader.ReadString('\n')
+	explanation = strings.TrimSpace(explanation)
+	if err != nil {
+		return "", err
+	}
+	if len(explanation) == 0 {
+		return "", errors.New("Explanation cannot be empty")
+	}
+	return explanation, nil
 }

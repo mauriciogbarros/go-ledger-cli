@@ -304,3 +304,4 @@ This project is licensed under the [MIT License](./LICENSE.md)
 
 # Notes
 - Value conversion fallow banker's rounding
+- Improvement: add ref property to account, and implement a counter for it based on the account type.

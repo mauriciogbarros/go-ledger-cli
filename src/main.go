@@ -1,18 +1,19 @@
 package main
 
 import (
-	"go.mod/db"
+	"log"
+	"os"
+
+	"go.mod/internal/cli"
 )
 
-// "go.mod/internal/cli"
-// "go.mod/internal/journal"
-// "go.mod/internal/storage"
 
 func main() {
-	// var j journal.Journal
-	// j.NewJournal()
-	// storage.SetJournal(&j)
-
-	// cli.Run()
-	db.Initialize()
+	msg, err := cli.Run()
+	if err != nil {
+		log.Printf("Error => %v\n", err)
+		os.Exit(1)
+	}
+	log.Printf("Status =>  %s\n", msg)
+	os.Exit(0)
 }

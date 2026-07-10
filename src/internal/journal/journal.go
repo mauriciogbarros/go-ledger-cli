@@ -4,21 +4,38 @@ import (
 	"fmt"
 	"strings"
 
+	"go.mod/db"
 	"go.mod/internal/account"
+	"go.mod/internal/chart"
 	"go.mod/internal/entry"
 )
 
 type Journal struct {
-	Name string
-	Entries []entry.Entry
+	name string
+	chart *chart.ChartOfAccounts
+	entries []entry.Entry
 }
 
-func (j *Journal) NewJournal() {
-	j.Entries = make([]entry.Entry, 0)
+func (j *Journal) NewJournal(name string, chart *chart.ChartOfAccounts) error {
+	j.name = name
+	j.chart = chart
+	j.entries = make([]entry.Entry, 0)
+	entries, err := db.GetEntries()
+	if err != nil {
+		return err
+	}
+	j.entries = append(j.entries, entries...)
+	return nil
 }
 
-func (j *Journal) AddEntry(entry entry.Entry) {
-	j.Entries = append(j.Entries, entry)
+func (j *Journal) AddEntry(entry entry.Entry) error {
+	fmt.Println("Adding entry")
+	j.entries = append(j.entries, entry)
+	err := db.CreateEntry(entry)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (j Journal) String() string {
@@ -36,20 +53,28 @@ func (j Journal) String() string {
 	journal += "\n"
 	journal += strings.Repeat("─", 20)
 	journal += "─┬─"
-	journal += strings.Repeat("─", 34)
+	journal += strings.Repeat("─", account.MaxNameLength + 2)
 	journal += "─┬─"
-	journal += strings.Repeat("─", 5)
+	journal += strings.Repeat("─", 3)
 	journal += "─┬─"
 	journal += strings.Repeat("─", 12)
 	journal += "─┬─"
 	journal += strings.Repeat("─", 13)
 	journal += "\n"
 
-	if len(j.Entries) == 0 {
+	if len(j.entries) == 0 {
 		journal += " No entires\n"
 	} else {
-		for _, entry := range j.Entries {
-			journal += entry.String()
+		for _, e := range j.entries {
+			debitAccount, err := j.chart.GetAccountByRef(e.GetDebitAccountRef())
+			if err != nil {
+				panic(err)
+			}
+			creditAccount, err := j.chart.GetAccountByRef(e.GetCreditAccountRef())
+			if err != nil {
+				panic(err)
+			}
+			journal += e.Format(debitAccount.GetName(), creditAccount.GetName())
 		}
 	}
 	return journal

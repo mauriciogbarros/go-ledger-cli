@@ -1,95 +1,174 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
+	"go.mod/db"
+	"go.mod/internal/account"
+	"go.mod/internal/chart"
+	"go.mod/internal/currency"
 	"go.mod/internal/entry"
-	"go.mod/internal/storage"
+	"go.mod/internal/journal"
+	"go.mod/internal/ui"
 )
 
-func Run() {
+func Run() (string, error) {
+	var err error
+	err = db.Initialize()
+	if err != nil {
+		return "", err
+	}
+	var chart chart.ChartOfAccounts
+	var journal journal.Journal
+	err = chart.NewChartOfAccounts("Chart of Accounts")
+	if err != nil {
+		return "", err
+	}
+	err = journal.NewJournal("General Journal", &chart)
+	if err != nil {
+		return "", err
+	}
+
 	args := os.Args[1:]
+	fmt.Println()
 	if len(args) == 0 {
-		fmt.Println("Usage: ledger <command> [args]")
-		return
+		return "Usage: ledger <command> [args]", nil
 	}
 
 	switch args[0] {
-	case "create-account":
-		if err := storage.AddAccount(); err != nil {
-			fmt.Println("Error:", err)
-			return
-		}
-		accounts := storage.GetAccounts()
-		fmt.Printf("✅ Account created: acc_%d\n", len(accounts))
 
-	case "list-accounts":
-		accounts := storage.GetAccounts()
-		if len(accounts) == 0 {
-			fmt.Println("No accounts found.")
-			return
-		}
-		for i, a := range accounts {
-			fmt.Printf("acc_%d — %s (%s)\n", i+1, a.Name, a.Type)
-		}
+	case "commands":
+		fmt.Println("Available commands:")
+		fmt.Println("───────────────────")
+		fmt.Println("commands           - Show this help")
+		fmt.Println("view-journal       - Show journal entries")
+		fmt.Println("view-chart         - Show chart of accounts")
+		fmt.Println("new-account [args] - Add a new account to the chart")
+		fmt.Println("new-entry <amount> - Add a new entry to the journal")
+		fmt.Println()
+		return "Ok", nil
 
-	case "deposit":
-		if len(args) < 3 {
-			fmt.Println("Usage: ledger deposit <account_id> <amount>")
-			return
-		}
-		amount, err := strconv.ParseFloat(args[2], 64)
-		if err != nil || amount <= 0 {
-			fmt.Println("Invalid amount.")
-			return
-		}
-		storage.Journal.AddEntry(entry.NewEntry(args[1], "Cash", amount, "Deposit"))
-		fmt.Printf("✅ Deposited %.2f to %s\n", amount, args[1])
+	case "view-chart":
+		fmt.Println(chart)
+		return "Ok", nil
 
-	case "withdraw":
-		if len(args) < 3 {
-			fmt.Println("Usage: ledger withdraw <account_id> <amount>")
-			return
-		}
-		amount, err := strconv.ParseFloat(args[2], 64)
-		if err != nil || amount <= 0 {
-			fmt.Println("Invalid amount.")
-			return
-		}
-		storage.Journal.AddEntry(entry.NewEntry("Cash", args[1], amount, "Withdrawal"))
-		fmt.Printf("✅ Withdrew %.2f from %s\n", amount, args[1])
+	case "view-journal":
+		fmt.Println(journal)
+		return "Ok", nil
 
-	case "transfer":
-		if len(args) < 4 {
-			fmt.Println("Usage: ledger transfer <from> <to> <amount>")
-			return
-		}
-		amount, err := strconv.ParseFloat(args[3], 64)
-		if err != nil || amount <= 0 {
-			fmt.Println("Invalid amount.")
-			return
-		}
-		storage.Journal.AddEntry(entry.NewEntry(args[2], args[1], amount, "Transfer"))
-		fmt.Printf("✅ Transferred %.2f from %s to %s\n", amount, args[1], args[2])
+	case "new-account":
+		msg, err := runNewAccount(&chart, args[1:])
+		return msg, err
 
-	case "balance":
-		if len(args) < 2 {
-			fmt.Println("Usage: ledger balance <account_id>")
-			return
-		}
-		fmt.Printf("💰 Balance: (not yet implemented — requires ledger posting)\n")
-
-	case "history":
-		if len(args) < 2 {
-			fmt.Println("Usage: ledger history <account_id>")
-			return
-		}
-		fmt.Println("📜 Transactions:")
-		fmt.Println(storage.GetJournal())
-
+	case "new-entry":
+		msg, err := runNewEntry(&chart, &journal, args[1:])
+		return msg, err
+		
 	default:
-		fmt.Printf("Unknown command: %s\n", args[0])
+		return "Unknown command" + args[0], nil
 	}
+}
+
+func runNewAccount(chart *chart.ChartOfAccounts, args []string) (string, error) {
+	var name string
+	var accType int
+	var err error
+	switch len(args) {
+	case 0:
+		name, err = ui.MenuNewAccountName()
+		if err != nil {
+			return "", err
+		}
+		accType, err = ui.MenuNewAccountType()
+		if err != nil {
+			return "", err
+		}
+	case 1:
+		if len(args[0]) <= 0 || len(args[0]) > account.MaxNameLength {
+			return "", errors.New("Invalid accocunt name")
+		}
+		name = args[0]
+		accType, err = ui.MenuNewAccountType()
+		if err != nil {
+			return "", err
+		}
+	case 2:
+		if len(args[0]) <= 0 || len(args[0]) > account.MaxNameLength {
+			return "", errors.New("Invalid accocunt name")
+		}
+		name = args[0]
+		accType, err = strconv.Atoi(args[1])
+		if err != nil {
+			t := strings.ToLower(args[1])
+			switch t {
+			case "asset":
+				accType = 1
+			case "liability":
+				accType = 2
+			case "equity":
+				accType = 3
+			case "revenue":
+				accType = 4
+			case "expense":
+				accType = 5
+			default:
+				return "", errors.New("Invalid account type")
+			}
+		}
+	default:
+		return "", errors.New("Usage: ledger new-account [name] [type]")
+	}
+	newAccount, err := chart.AddAccount(name, accType)
+	if err != nil {
+		return "", err
+	}
+	return "Account created: " + strconv.Itoa(newAccount.GetRef()) + " - " + newAccount.GetName(), nil
+}
+
+func runNewEntry(chart *chart.ChartOfAccounts, journal *journal.Journal, args []string) (string, error) {
+	if len(args) != 1 {
+		return "Usage: ledger new-entry <ammount>", nil
+	}
+	amount64, err := strconv.ParseFloat(args[0], 64)
+	if err != nil {
+		return "", err
+	}
+	amount := currency.Convert64(amount64)
+	debitAccountRef, err := ui.MenuGetAccount(chart)
+	if err != nil {
+		return "", err
+	}
+	creditAccountRef, err := ui.MenuGetAccount(chart)
+	if err != nil {
+		return "", err
+	}
+	if debitAccountRef == creditAccountRef {
+		return "", errors.New("Invalid entry: debit and credit accounts must be different.")
+	}		
+	explanation, err := ui.MenuGetExplanation()
+	fmt.Println(len(explanation))
+	if err != nil {
+		return "", err
+	}
+	dr, err := chart.GetAccountByRef(debitAccountRef)
+	if err != nil {
+		return "", err
+	}
+	drName := dr.GetName()
+	cr, err := chart.GetAccountByRef(creditAccountRef)
+	if err != nil {
+		return "", err
+	}
+	crName := cr.GetName()
+	newEntry := entry.NewEntry(debitAccountRef, creditAccountRef, amount, explanation)
+	err = journal.AddEntry(newEntry)
+	if err != nil {
+		return "", err
+	}
+
+	return "Entry created: [Dr]" + drName + ", [Cr]" + crName + ": " + amount.String(), nil
 }

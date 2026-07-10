@@ -1,23 +1,21 @@
 package id
 
-import (
-	"github.com/google/uuid"
-)
+import "github.com/google/uuid"
 
 type Id uuid.UUID
-
-func NewId() Id {
-	return Id(uuid.New())
-}
 
 func (i Id) String() string {
 	return uuid.UUID(i).String()
 }
 
-func FromString(stringId string) (uuid.UUID, error) {
-	parsedId, err := uuid.Parse(stringId)
+func GenerateNewId() Id {
+	return Id(uuid.New())
+}
+
+func ParseId(s string) (Id, error) {
+	u, err := uuid.Parse(s)
 	if err != nil {
-		return uuid.Nil, err
+		return Id{}, err
 	}
-	return parsedId, nil
+	return Id(u), nil
 }

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"go.mod/internal/account"
 	"go.mod/internal/currency"
 	"go.mod/internal/id"
@@ -16,62 +15,97 @@ var MaxExplanationLength = 36
 type Entry struct {
 	id id.Id
 	date time.Time
-	debitAccount string
-	debitRef id.Id
-	debitAmount currency.Currency
-	creditAccount string
-	creditRef id.Id
-	creditAmount currency.Currency
+	debitAccountRef int
+	creditAccountRef int
+	amount currency.Currency
 	explanation string
 }
 
 func NewEntry(
-	debitAccount string,
-	creditAccount string,
-	amount float64,
+	debitAccountRef int,
+	creditAccountRef int,
+	amount currency.Currency,
 	explanation string,
 ) Entry {
 	return Entry{
-		id: id.NewId(),
+		id: id.GenerateNewId(),
 		date: time.Now(),
-		debitAccount: debitAccount,
-		debitRef: id.Id(uuid.Nil),
-		debitAmount: currency.Convert64(amount),
-		creditAccount: creditAccount,
-		creditRef: id.Id(uuid.Nil),
-		creditAmount: currency.Convert64(amount),
+		debitAccountRef: debitAccountRef,
+		creditAccountRef: creditAccountRef,
+		amount: amount,
 		explanation: explanation,
 	}
 }
 
-func (e Entry) String() string {
-	var entry string
-	entry += " "
+func NewEntryFromDb(
+	id id.Id,
+	date time.Time,
+	debitAccountRef int,
+	creditAccountRef int,
+	amount currency.Currency,
+	explanation string,
+) Entry {
+	return Entry{
+		id: id,
+		date: date,
+		debitAccountRef: debitAccountRef,
+		creditAccountRef: creditAccountRef,
+		amount: amount,
+		explanation: explanation,
+	}
+}
+
+func (e *Entry) GetId() id.Id {
+	return e.id
+}
+
+func (e *Entry) GetDate() time.Time {
+	return e.date
+}
+
+func (e *Entry) GetDebitAccountRef() int {
+	return e.debitAccountRef
+}
+
+func (e *Entry) GetCreditAccountRef() int {
+	return e.creditAccountRef
+}
+
+func (e *Entry) GetAmount() currency.Currency {
+	return e.amount
+}
+
+func (e *Entry) GetExplanation() string {
+	return e.explanation
+}
+
+func (e Entry) Format(debitAccountName, creditAccountName string) string {
+	var entry string = " "
 	entry += fmt.Sprintf("%-*s", 19, e.date.Format(time.DateTime))
 	entry += " │ "
-	entry += fmt.Sprintf("%-*s", account.MaxNameLength + 2, e.debitAccount)
+	entry += fmt.Sprintf("%-*s", account.MaxNameLength + 2, debitAccountName)
 	entry += " │ "
-	entry += strings.Repeat(" ", 5)
+	entry += strings.Repeat(" ", 3)
 	entry += " │ "
-	entry += fmt.Sprintf("%*s", 12, e.debitAmount.String())
+	entry += fmt.Sprintf("%*s", 12, e.amount.String())
 	entry += " │\n"
 	entry += " "
 	entry += strings.Repeat(" ", 19)
 	entry += " │   "
-	entry += fmt.Sprintf("%-*s", account.MaxNameLength, e.creditAccount)
+	entry += fmt.Sprintf("%-*s", account.MaxNameLength, creditAccountName)
 	entry += " │ "
-	entry += strings.Repeat(" ", 5)
+	entry += strings.Repeat(" ", 3)
 	entry += " │ "
 	entry += strings.Repeat(" ", 12)
 	entry += " │ "
-	entry += fmt.Sprintf("%*s", 12, e.creditAmount.String())
+	entry += fmt.Sprintf("%*s", 12, e.amount.String())
 	entry += "\n"
 	entry += " "
 	entry += strings.Repeat(" ", 19)
 	entry += " │     "
 	entry += fmt.Sprintf("%-*s", MaxExplanationLength, e.explanation)
 	entry += " │ "
-	entry += strings.Repeat(" ", 5)
+	entry += strings.Repeat(" ", 3)
 	entry += " │ "
 	entry += strings.Repeat(" ", 12)
 	entry += " │ "
