@@ -11,3 +11,4 @@
 <!-- TODO: Populate testing database -->
 <!-- TODO: Reset testing database after tests -->
 <!-- TODO: Implement testing -->
+<!-- TODO: Implement ledger status check: Dr == Cr -->

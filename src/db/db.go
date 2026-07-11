@@ -43,6 +43,7 @@ func Initialize() error {
 		credit_account_id INTER NOT NULL,
 		amount INTEGER NOT NULL,
 		explanation VARCHAR(` + strconv.Itoa(entry.MaxExplanationLength) + `) NOT NULL,
+		posted INTEGER NOT NULL,
 		FOREIGN KEY(debit_account_id) REFERENCES accounts(id),
 		FOREIGN KEY(credit_account_id) REFERENCES accounts(id)
 	)`
@@ -89,7 +90,7 @@ func GetEntries() ([]entry.Entry, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, date, debit_account_id, credit_account_id, amount, explanation FROM entries")
+	rows, err := db.Query("SELECT id, date, debit_account_id, credit_account_id, amount, explanation, posted FROM entries")
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +99,9 @@ func GetEntries() ([]entry.Entry, error) {
 	entries := []entry.Entry{}
 	for rows.Next() {
 		var stringId, stringDate, explanation string
-		var debitAccountId, creditAccountId, amount int
-		err := rows.Scan(&stringId, &stringDate, &debitAccountId, &creditAccountId, &amount, &explanation)
+		var debitAccountId, creditAccountId, amount, posted int
+		var isPosted bool
+		err := rows.Scan(&stringId, &stringDate, &debitAccountId, &creditAccountId, &amount, &explanation, &posted)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +113,13 @@ func GetEntries() ([]entry.Entry, error) {
 		if err != nil {
 			return nil, err
 		}
-		entry := entry.NewEntryFromDb(id, date, debitAccountId, creditAccountId, currency.Currency(amount), explanation)
+
+		if posted == 0{
+			isPosted = false
+		} else {
+			isPosted = true
+		}
+		entry := entry.NewEntryFromDb(id, date, debitAccountId, creditAccountId, currency.Currency(amount), explanation, isPosted)
 		entries = append(entries, entry)
 	}
 
@@ -149,7 +157,7 @@ func CreateEntry(newEntry entry.Entry) error {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO entries(id, date, debit_account_id, credit_account_id, amount, explanation) values(?, ?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO entries(id, date, debit_account_id, credit_account_id, amount, explanation, posted) values(?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
@@ -161,7 +169,8 @@ func CreateEntry(newEntry entry.Entry) error {
 	creditAccountId := newEntry.GetCreditAccountRef()
 	amount := int(newEntry.GetAmount())
 	explanation := newEntry.GetExplanation()
-	_, err = stmt.Exec(id, date, debitAccountId, creditAccountId, amount, explanation)
+	posted := newEntry.GetPostedInt()
+	_, err = stmt.Exec(id, date, debitAccountId, creditAccountId, amount, explanation, posted)
 	if err != nil {
 		return err
 	}

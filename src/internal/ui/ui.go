@@ -20,6 +20,7 @@ var reader = bufio.NewReader(os.Stdin)
 func MenuNewAccountName() (string, error) {
 	fmt.Print("Account name: ")
 	name, err := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
 	if err != nil {
 		return "", err
 	}
