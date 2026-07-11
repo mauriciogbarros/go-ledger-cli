@@ -2,7 +2,6 @@ package entry
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -106,7 +105,7 @@ func (e Entry) Format(debitAccountName, creditAccountName string) string {
 	entry += fmt.Sprintf("%-*s", account.MaxNameLength + 2, debitAccountName)
 	entry += " │ "
 	if e.posted {
-		entry += strconv.Itoa(e.debitAccountRef)
+		entry += fmt.Sprintf("%*d", 3, e.debitAccountRef)
 	} else {
 		entry += strings.Repeat(" ", 3)
 	}
@@ -119,7 +118,7 @@ func (e Entry) Format(debitAccountName, creditAccountName string) string {
 	entry += fmt.Sprintf("%-*s", account.MaxNameLength, creditAccountName)
 	entry += " │ "
 	if e.posted {
-		entry += strconv.Itoa(e.creditAccountRef)
+		entry += fmt.Sprintf("%*d", 3, e.creditAccountRef)
 	} else {
 		entry += strings.Repeat(" ", 3)
 	}
