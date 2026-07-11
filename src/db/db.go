@@ -27,7 +27,8 @@ func Initialize() error {
 
 	var stmt string
 	stmt = `CREATE TABLE IF NOT EXISTS accounts (
-		id INTEGER PRIMARY KEY,
+		id TEXT PRIMARY KEY,
+		ref INTEGER NOT NULL,
 		name VARCHAR(` + strconv.Itoa(account.MaxNameLength) +`) NOT NULL,
 		type INTEGER NOT NULL
 	);`
@@ -35,7 +36,6 @@ func Initialize() error {
 	if err != nil {
 		return err
 	}
-
 	stmt = `CREATE TABLE IF NOT EXISTS entries (
 		id TEXT PRIMARY KEY,
 		date TEXT NOT NULL,
@@ -51,7 +51,6 @@ func Initialize() error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -62,21 +61,24 @@ func GetAccounts() ([]account.Account, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, name, type FROM accounts")
+	rows, err := db.Query("SELECT id, ref, name, type FROM accounts")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	accounts := []account.Account{}
 	for rows.Next() {
-		var id, accountType int
-		var name string
-		err := rows.Scan(&id, &name, &accountType)
+		var stringId, name string
+		var ref, accountType int
+		err := rows.Scan(&stringId, &ref, &name, &accountType)
 		if err != nil {
 			return nil, err
 		}
-		account := account.NewAccount(id, name, accountType)
+		id, err := id.ParseId(stringId)
+		if err != nil {
+			return nil, err
+		}
+		account := account.NewAccountFromDb(id, ref, name, accountType)
 		accounts = append(accounts, account)
 	}
 
@@ -133,16 +135,17 @@ func CreateAccount(newAccount account.Account) error {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO accounts(id, name, type) values(?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO accounts(id, ref, name, type) values(?,?,?,?)")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	id := newAccount.GetRef()
+	id := newAccount.GetId().String()
+	ref := newAccount.GetRef()
 	name := newAccount.GetName()
 	accountType := newAccount.GetAccountTypeInt()
-	_, err = stmt.Exec(id, name, accountType)
+	_, err = stmt.Exec(id, ref, name, accountType)
 	if err != nil {
 		return err
 	}

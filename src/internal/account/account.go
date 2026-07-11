@@ -2,41 +2,58 @@ package account
 
 import (
 	"fmt"
+
+	"go.mod/internal/id"
 )
 
 var MaxNameLength int = 38
 
 type Account struct {
-	ref   int
+	id id.Id
+	ref int
 	name string
 	accountType AccountType
 }
 
-func (a Account) GetRef() int {
+func (a *Account) GetId() id.Id {
+	return a.id
+}
+
+func (a *Account) GetRef() int {
 	return a.ref
 }
 
-func (a Account) GetName() string {
+func (a *Account) GetName() string {
 	return a.name
 }
 
-func (a Account) GetAccountType() AccountType {
+func (a *Account) GetAccountType() AccountType {
 	return a.accountType
 }
 
-func (a Account) GetAccountTypeInt() int {
+func (a *Account) GetAccountTypeInt() int {
 	return int(a.accountType)
 }
 
 func NewAccount(ref int, name string, accountType int) Account {
 	return Account{
+		id: id.GenerateNewId(),
 		ref: ref,
 		name: name,
 		accountType: AccountType(accountType),
 	}
 }
 
-func (a Account) GetSide() AccountSide {
+func NewAccountFromDb(id id.Id, ref int, name string, accountType int) Account {
+	return Account{
+		id: id,
+		ref: ref,
+		name: name,
+		accountType: AccountType(accountType),
+	}
+}
+
+func (a *Account) GetSide() AccountSide {
 	switch a.accountType {
 	case Asset, Expense:
 		return Debit
@@ -45,7 +62,7 @@ func (a Account) GetSide() AccountSide {
 	}
 }
 
-func (a Account) String() string {
+func (a *Account) String() string {
 	var output string = " "
 	output += fmt.Sprintf("%-*d", 3, a.ref)
 	output += " │ "
@@ -89,3 +106,13 @@ const (
 	Debit  AccountSide = 0
 	Credit AccountSide = 1
 )
+
+func GetSideName(side int) string {
+	switch side {
+	case 0:
+		return "Debit"
+	case 1:
+		return "Credit"
+	}
+	return ""
+}

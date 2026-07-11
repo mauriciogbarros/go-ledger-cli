@@ -66,19 +66,28 @@ func DisplayJournal(journal journal.Journal, fromDate time.Time, toDate time.Tim
 	// TODO: implement date filter
 }
 
-func MenuGetAccount(chart *chart.ChartOfAccounts) (int, error) {
+func MenuGetAccount(chart *chart.ChartOfAccounts, side int) (int, error) {
 	accounts := chart.GetAccounts()
 	width := 1 + 3 + 3 + account.MaxNameLength + 3 + 9 + 1
-	fmt.Println("Accounts")
-	fmt.Println(strings.Repeat("─", width))
+	var menu string = ""
+	menu += " Ref   Accounts\n"
+	menu += "─"
+	menu += strings.Repeat("─", 3)
+	menu += "─┬─"
+	menu += strings.Repeat("─", account.MaxNameLength)
+	menu += "─┬─"
+	menu += strings.Repeat("─", 9 + 1)
+	menu += "\n"
 	var refs []int
 	for _, account := range accounts {
 		refs = append(refs, account.GetRef())
-		fmt.Println(account.String())
+		menu += account.String()
 	}
-	fmt.Println(strings.Repeat("─", width))
-	fmt.Print("Enter account Ref: ")
+	menu += strings.Repeat("─", width)
+	fmt.Println(menu)
+	fmt.Printf("Enter %s account Ref: ", strings.ToLower(account.GetSideName(side)))
 	input, err := reader.ReadString('\n')
+	fmt.Println()
 	if err != nil {
 		return 0, err
 	}

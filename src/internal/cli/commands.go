@@ -138,11 +138,11 @@ func runNewEntry(chart *chart.ChartOfAccounts, journal *journal.Journal, args []
 		return "", err
 	}
 	amount := currency.Convert64(amount64)
-	debitAccountRef, err := ui.MenuGetAccount(chart)
+	debitAccountRef, err := ui.MenuGetAccount(chart, 0)
 	if err != nil {
 		return "", err
 	}
-	creditAccountRef, err := ui.MenuGetAccount(chart)
+	creditAccountRef, err := ui.MenuGetAccount(chart, 1)
 	if err != nil {
 		return "", err
 	}
