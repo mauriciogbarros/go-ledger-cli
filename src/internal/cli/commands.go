@@ -170,5 +170,5 @@ func runNewEntry(chart *chart.ChartOfAccounts, journal *journal.Journal, args []
 		return "", err
 	}
 
-	return "Entry created: [Dr]" + drName + ", [Cr]" + crName + ": " + amount.String(), nil
+	return "Entry created: Dr: " + drName + ", Cr: " + crName + " = $" + amount.String(), nil
 }

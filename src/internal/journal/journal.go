@@ -39,31 +39,39 @@ func (j *Journal) AddEntry(entry entry.Entry) error {
 }
 
 func (j Journal) String() string {
-	var journal string
-	journal += " "
-	journal += fmt.Sprintf("%-*s", 19, "Date")
-	journal += "   "
-	journal += fmt.Sprintf("%-*s", account.MaxNameLength + 2, "Accounts & Explanation")
-	journal += "   "
-	journal += fmt.Sprintf("%-*s", 5, "Ref")
-	journal += "   "
-	journal += fmt.Sprintf("%*s", 12, "Debit")
-	journal += "   "
-	journal += fmt.Sprintf("%*s", 12, "Credit")
-	journal += "\n"
-	journal += strings.Repeat("─", 20)
-	journal += "─┬─"
-	journal += strings.Repeat("─", account.MaxNameLength + 2)
-	journal += "─┬─"
-	journal += strings.Repeat("─", 3)
-	journal += "─┬─"
-	journal += strings.Repeat("─", 12)
-	journal += "─┬─"
-	journal += strings.Repeat("─", 13)
-	journal += "\n"
+	var width int = 1 + 19 + 3 + account.MaxNameLength + 2 + 9 + 12 + 3 + 12 + 1
+	var paddingLeft = (width - len(j.name))/2
+
+	var output string
+	output += strings.Repeat(" ", paddingLeft)
+	output += j.name
+	output += "\n"
+	output += strings.Repeat("─", width)
+	output += "\n"
+	output += " "
+	output += fmt.Sprintf("%-*s", 19, "Date")
+	output += "   "
+	output += fmt.Sprintf("%-*s", account.MaxNameLength + 2, "Accounts & Explanation")
+	output += "   "
+	output += "Ref"
+	output += "   "
+	output += fmt.Sprintf("%*s", 12, "Debit")
+	output += "   "
+	output += fmt.Sprintf("%*s", 12, "Credit")
+	output += "\n"
+	output += strings.Repeat("─", 20)
+	output += "─┬─"
+	output += strings.Repeat("─", account.MaxNameLength + 2)
+	output += "─┬─"
+	output += strings.Repeat("─", 3)
+	output += "─┬─"
+	output += strings.Repeat("─", 12)
+	output += "─┬─"
+	output += strings.Repeat("─", 13)
+	output += "\n"
 
 	if len(j.entries) == 0 {
-		journal += " No entires\n"
+		output += " No entires\n"
 	} else {
 		for _, e := range j.entries {
 			debitAccount, err := j.chart.GetAccountByRef(e.GetDebitAccountRef())
@@ -74,8 +82,8 @@ func (j Journal) String() string {
 			if err != nil {
 				panic(err)
 			}
-			journal += e.Format(debitAccount.GetName(), creditAccount.GetName())
+			output += e.Format(debitAccount.GetName(), creditAccount.GetName())
 		}
 	}
-	return journal
+	return output
 }
