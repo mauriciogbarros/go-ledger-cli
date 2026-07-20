@@ -29,7 +29,6 @@ func (j *Journal) NewJournal(name string, chart *chart.ChartOfAccounts) error {
 }
 
 func (j *Journal) AddEntry(entry entry.Entry) error {
-	fmt.Println("Adding entry")
 	j.entries = append(j.entries, entry)
 	err := db.CreateEntry(entry)
 	if err != nil {

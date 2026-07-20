@@ -15,7 +15,7 @@ func main() {
 		fmt.Println()
 		os.Exit(1)
 	}
-	log.Printf("Status =>  %s\n", msg)
+	log.Printf("Status => %s\n", msg)
 	fmt.Println()
 	os.Exit(0)
 }

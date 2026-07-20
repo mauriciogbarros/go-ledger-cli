@@ -12,7 +12,7 @@ type Account struct {
 	id id.Id
 	ref int
 	name string
-	accountType AccountType
+	accountTypeId id.Id
 }
 
 func (a *Account) GetId() id.Id {
@@ -27,39 +27,41 @@ func (a *Account) GetName() string {
 	return a.name
 }
 
-func (a *Account) GetAccountType() AccountType {
-	return a.accountType
+func (a *Account) GetAccountTypeId() id.Id {
+	return a.accountTypeId
 }
 
-func (a *Account) GetAccountTypeInt() int {
-	return int(a.accountType)
+func (a *Account) SetRef(ref int) {
+	a.ref = ref
 }
 
-func NewAccount(ref int, name string, accountType int) Account {
-	return Account{
+
+func NewAccount(name string, accountTypeId id.Id) *Account {
+	return &Account{
 		id: id.GenerateNewId(),
-		ref: ref,
+		ref: 0,
 		name: name,
-		accountType: AccountType(accountType),
+		accountTypeId: accountTypeId,
 	}
 }
 
-func NewAccountFromDb(id id.Id, ref int, name string, accountType int) Account {
+func CreateAccountFromDb(sId string, ref int, name string, sAccTypeId string) (Account, error) {
+	accountId, err := id.ParseString(sId)
+	if err != nil {
+		return Account{}, err
+	}
+
+	accountTypeId, err := id.ParseString(sAccTypeId)
+	if err != nil {
+		return Account{}, err
+	}
+
 	return Account{
-		id: id,
+		id: accountId,
 		ref: ref,
 		name: name,
-		accountType: AccountType(accountType),
-	}
-}
-
-func (a *Account) GetSide() AccountSide {
-	switch a.accountType {
-	case Asset, Expense:
-		return Debit
-	default:
-		return Credit
-	}
+		accountTypeId: accountTypeId,
+	}, nil
 }
 
 func (a *Account) String() string {
@@ -67,52 +69,8 @@ func (a *Account) String() string {
 	output += fmt.Sprintf("%-*d", 3, a.ref)
 	output += " │ "
 	output += fmt.Sprintf("%-*s", MaxNameLength, a.name)
-	output += " │ "
-	output += a.accountType.String()
-	output += "\n"
+	output += " │"
 
 	return output
 }
 
-type AccountType int
-
-const (
-	Asset     AccountType = 1
-	Liability AccountType = 2
-	Equity    AccountType = 3
-	Revenue   AccountType = 4
-	Expense   AccountType = 5
-)
-
-func (at AccountType) String() string {
-	switch at {
-	case Asset:
-		return "Asset"
-	case Liability:
-		return "Liability"
-	case Equity:
-		return "Equity"
-	case Revenue:
-		return "Revenue"
-	case Expense:
-		return "Expense"
-	}
-	return ""
-}
-
-type AccountSide int
-
-const (
-	Debit  AccountSide = 0
-	Credit AccountSide = 1
-)
-
-func GetSideName(side int) string {
-	switch side {
-	case 0:
-		return "Debit"
-	case 1:
-		return "Credit"
-	}
-	return ""
-}

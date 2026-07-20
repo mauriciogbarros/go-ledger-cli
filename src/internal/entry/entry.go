@@ -40,23 +40,40 @@ func NewEntry(
 }
 
 func NewEntryFromDb(
-	id id.Id,
-	date time.Time,
-	debitAccountRef int,
-	creditAccountRef int,
-	amount currency.Currency,
+	sId string,
+	sDate string,
+	drRef int,
+	crRef int,
+	cents int,
 	explanation string,
-	posted bool,
-) Entry {
+	intPosted int,
+) (Entry, error) {
+	id, err := id.ParseString(sId)
+	if err != nil {
+		return Entry{}, err
+	}
+
+	date, err := time.Parse(time.DateOnly, sDate)
+	if err != nil {
+		return Entry{}, err
+	}
+
+	amount := currency.Currency(cents)
+
+	posted := false
+	if intPosted == 1 {
+		posted = true
+	}
+
 	return Entry{
 		id: id,
 		date: date,
-		debitAccountRef: debitAccountRef,
-		creditAccountRef: creditAccountRef,
+		debitAccountRef: drRef,
+		creditAccountRef: crRef,
 		amount: amount,
 		explanation: explanation,
 		posted: posted,
-	}
+	}, nil
 }
 
 func (e *Entry) GetId() id.Id {

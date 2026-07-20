@@ -11,13 +11,15 @@ import (
 	"time"
 
 	"go.mod/internal/account"
+	"go.mod/internal/accountType"
 	"go.mod/internal/chart"
+	"go.mod/internal/id"
 	"go.mod/internal/journal"
 )
 
 var reader = bufio.NewReader(os.Stdin)
 
-func MenuNewAccountName() (string, error) {
+func InputAccountName() (string, error) {
 	fmt.Print("Account name: ")
 	name, err := reader.ReadString('\n')
 	name = strings.TrimSpace(name)
@@ -34,30 +36,47 @@ func MenuNewAccountName() (string, error) {
 	return name, nil
 }
 
-func MenuNewAccountType() (int, error) {
+func InputAccountType(chart *chart.ChartOfAccounts) (id.Id, error) {
+	ledger := chart.GetLedger()
+	accountTypes := ledger.GetAccountTypes()
+	options := make([]int, 0)
 	fmt.Println("Choose the account type:")
-	fmt.Println("1. Asset")
-	fmt.Println("2. Liability")
-	fmt.Println("3. Equity")
-	fmt.Println("4. Revenue")
-	fmt.Println("5. Expense")
-	fmt.Println("────────────────────────")
+	for _, at := range *accountTypes {
+		option := at.GetRefGroup() / 1000
+		options = append(options, option)
+		fmt.Printf("%d. %s\n", option, at.GetName())
+	}
+	fmt.Println(strings.Repeat("─", 3 + accountType.MaxNameLength))
 	fmt.Print("Choice: ")
 
 	input, err := reader.ReadString('\n')
 	if err != nil {
-		return 0, err
+		return id.Id{}, err
 	}
 	input = strings.TrimSpace(input)
 	choice, err := strconv.Atoi(input)
 	if err != nil {
-		return 0, errors.New("Invalid input")
-	}
-	if choice < 1 || choice > 5 {
-		return 0, errors.New("Invalid account type")
+		return id.Id{}, errors.New("Invalid input")
 	}
 
-	return choice, nil
+	isValidChoice := false
+	for _, option := range options {
+		if choice == option {
+			isValidChoice = true
+			break
+		}
+	}
+	if !isValidChoice {
+		return id.Id{}, errors.New("Invalid choice")
+	}
+
+	accountType, err := ledger.GetAccountTypeByRef(choice * 1000)
+	if err != nil {
+		return id.Id{}, err
+	}
+	
+	accountTypeId := accountType.GetId()
+	return accountTypeId, nil
 }
 
 func DisplayJournal(journal journal.Journal, fromDate time.Time, toDate time.Time) {
@@ -68,6 +87,7 @@ func DisplayJournal(journal journal.Journal, fromDate time.Time, toDate time.Tim
 
 func MenuGetAccount(chart *chart.ChartOfAccounts, side int) (int, error) {
 	accounts := chart.GetAccounts()
+
 	width := 1 + 3 + 3 + account.MaxNameLength + 3 + 9 + 1
 	var menu string = ""
 	menu += " Ref   Accounts\n"
@@ -79,13 +99,14 @@ func MenuGetAccount(chart *chart.ChartOfAccounts, side int) (int, error) {
 	menu += strings.Repeat("─", 9 + 1)
 	menu += "\n"
 	var refs []int
-	for _, account := range accounts {
+	for _, account := range *accounts {
 		refs = append(refs, account.GetRef())
 		menu += account.String()
 	}
 	menu += strings.Repeat("─", width)
 	fmt.Println(menu)
-	fmt.Printf("Enter %s account Ref: ", strings.ToLower(account.GetSideName(side)))
+	// fmt.Printf("Enter %s account Ref: ", strings.ToLower(account.GetSide()))
+	fmt.Print("Enter account Ref: ")
 	input, err := reader.ReadString('\n')
 	fmt.Println()
 	if err != nil {

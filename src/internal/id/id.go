@@ -12,7 +12,7 @@ func GenerateNewId() Id {
 	return Id(uuid.New())
 }
 
-func ParseId(s string) (Id, error) {
+func ParseString(s string) (Id, error) {
 	u, err := uuid.Parse(s)
 	if err != nil {
 		return Id{}, err

@@ -5,55 +5,97 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mod/db"
 	"go.mod/internal/account"
+	"go.mod/internal/accountType"
+	"go.mod/internal/id"
+	"go.mod/internal/ledger"
 )
-
-var refCounter int
 
 type ChartOfAccounts struct {
 	name string
-	accounts []account.Account
+	ledger *ledger.Ledger
+	accounts *[]account.Account
 }
 
-func (c *ChartOfAccounts) NewChartOfAccounts(name string) error {
-	c.name = name
-	c.accounts = make([]account.Account, 0)
-	accounts, err := db.GetAccounts()
-	if err != nil {
-		return err
+func NewChartOfAccounts(name string, ledger *ledger.Ledger) *ChartOfAccounts {
+	accounts := make([]account.Account, 0)
+	return &ChartOfAccounts{
+		name: name,
+		ledger: ledger,
+		accounts: &accounts,
 	}
-	c.accounts = accounts
-	refCounter = len(accounts)
-	return nil
 }
 
 func (c *ChartOfAccounts) GetName() string {
 	return c.name
 }
 
-func (c *ChartOfAccounts) GetAccounts() []account.Account {
+func (c *ChartOfAccounts) GetLedger() *ledger.Ledger {
+	return c.ledger
+}
+
+func (c *ChartOfAccounts) GetAccounts() *[]account.Account {
 	return c.accounts
 }
 
-func (c *ChartOfAccounts) AddAccount(name string, accountType int) (account.Account, error) {
-	for _, a := range c.accounts {
+func (c *ChartOfAccounts) GetAccountByName(name string) (*account.Account, error) {
+	for _, a := range *c.accounts {
 		if strings.Compare(a.GetName(), name) == 0 {
-			return account.Account{}, errors.New("Account name must be unique.")
+			return &a, nil
 		}
 	}
-	refCounter++
-	newAccount := account.NewAccount(refCounter, name, accountType)
-	c.accounts = append(c.accounts, newAccount)
-	if err := db.CreateAccount(newAccount); err != nil {
-		return account.Account{}, err
-	}
 
-	return newAccount, nil
+	return nil, errors.New("account name not found.")
 }
 
-func (c ChartOfAccounts) String() string {
-	width := 1 + 3 + 3 + account.MaxNameLength + 3 + 9 + 1
+func (c *ChartOfAccounts) GetAccountById(id id.Id) (*account.Account, error) {
+	for _, a := range *c.accounts {
+		if a.GetId() == id {
+			return &a, nil
+		}
+	}
+
+	return nil, errors.New("account id not found.")
+}
+
+func (c *ChartOfAccounts) GetAccountByRef(ref int) (*account.Account, error) {
+	for _, a := range *c.accounts {
+		if a.GetRef() == ref {
+			return &a, nil
+		}
+	}
+
+	return nil, errors.New("account ref not found.")
+}
+
+func (c *ChartOfAccounts) AddAccount(account *account.Account) error {
+	for _, a := range *c.accounts {
+		if strings.Compare(a.GetName(), account.GetName()) == 0 {
+			return errors.New("Account name must be unique.")
+		}
+	}
+
+	*c.accounts = append(*c.accounts, *account)
+	
+	return nil
+}
+
+func (c *ChartOfAccounts) RemoveAccount(id id.Id) error {
+	for i, a := range *c.accounts {
+		if a.GetId() == id {
+			*c.accounts = append((*c.accounts)[:i], (*c.accounts)[i+1:]...)
+			return nil
+		}
+	}
+
+	return errors.New("account id not found.")
+}
+
+func (c *ChartOfAccounts) SetAccounts(accounts *[]account.Account) {
+	c.accounts = accounts
+}
+func (c *ChartOfAccounts) String() string {
+	width := 1 + 4 + 3 + account.MaxNameLength + 3 + accountType.MaxNameLength + 3 + 6 + 1
 	paddingLeft := (width - len(c.name)) / 2
 	var output string = "\n"
 	output += strings.Repeat(" ", paddingLeft)
@@ -61,33 +103,39 @@ func (c ChartOfAccounts) String() string {
 	output += "\n"
 	output += strings.Repeat("─", width)
 	output += "\n"
-	output += " Ref   "
+	output += " "
+	output += fmt.Sprintf("%*s", 4, "Ref")
+	output += "   "
 	output += fmt.Sprintf("%-*s", account.MaxNameLength, "Name")
 	output += "   "
-	output += fmt.Sprintf("%-*s", 9, "Type")
-	output += " \n"
+	output += fmt.Sprintf("%-*s", accountType.MaxNameLength, "Type")
+	output += "   "
+	output += fmt.Sprintf("%-*s", 6, "Side")
+	output += "\n"
+	output += "─"
 	output += strings.Repeat("─", 4)
 	output += "─┬─"
 	output += strings.Repeat("─", account.MaxNameLength)
 	output += "─┬─"
-	output += strings.Repeat("─", 9)
+	output += strings.Repeat("─", accountType.MaxNameLength)
+	output += "─┬─"
+	output += strings.Repeat("─", 6)
 	output += "─\n"
-	if len(c.accounts) == 0 {
-		output += " No acccounts\n"
+	if len(*c.accounts) == 0 {
+		output += "        *No acccounts\n"
 	} else {
-		for _, account := range c.accounts {
+		for _, account := range *c.accounts {
 			output += account.String()
+			accountTypeId := account.GetAccountTypeId()
+			accountType, err := c.ledger.GetAccountTypeById(accountTypeId)
+			if err != nil {
+				panic(err)
+			}
+			output += accountType.String()
+			output += "\n"
 		}
 	}
+	output += "\n"
 
 	return output
-}
-
-func (c *ChartOfAccounts) GetAccountByRef(ref int) (account.Account, error) {
-	for _, a := range c.accounts {
-		if a.GetRef() == ref {
-			return a, nil
-		}
-	}
-	return account.Account{}, errors.New("Account not found")
 }
