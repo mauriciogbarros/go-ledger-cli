@@ -1,3 +1,4 @@
+<!-- TODO: Implement posting functionality -->
 <!-- TODO: Allow to update an entry if posted == false -->
 <!-- TODO: Journal get entries not posted -->
 <!-- TODO: Journal get entries posted -->
