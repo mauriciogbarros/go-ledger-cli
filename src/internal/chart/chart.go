@@ -58,6 +58,15 @@ func (c *ChartOfAccounts) GetAccountById(id id.Id) (*account.Account, error) {
 	return nil, errors.New("account id not found.")
 }
 
+func (c *ChartOfAccounts) GetAccountByStringId(strId string) (*account.Account, error) {
+	aId, err := id.ParseString(strId)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.GetAccountById(aId)
+}
+
 func (c *ChartOfAccounts) GetAccountByRef(ref int) (*account.Account, error) {
 	for _, a := range *c.accounts {
 		if a.GetRef() == ref {

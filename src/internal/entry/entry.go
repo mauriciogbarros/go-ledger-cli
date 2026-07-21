@@ -15,24 +15,24 @@ var MaxExplanationLength = 36
 type Entry struct {
 	id id.Id
 	date time.Time
-	debitAccountRef int
-	creditAccountRef int
+	debitAccount *account.Account
+	creditAccount *account.Account
 	amount currency.Currency
 	explanation string
 	posted bool
 }
 
 func NewEntry(
-	debitAccountRef int,
-	creditAccountRef int,
+	debitAccount *account.Account,
+	creditAccount *account.Account,
 	amount currency.Currency,
 	explanation string,
 ) Entry {
 	return Entry{
 		id: id.GenerateNewId(),
 		date: time.Now(),
-		debitAccountRef: debitAccountRef,
-		creditAccountRef: creditAccountRef,
+		debitAccount: debitAccount,
+		creditAccount: creditAccount,
 		amount: amount,
 		explanation: explanation,
 		posted: false,
@@ -42,20 +42,20 @@ func NewEntry(
 func NewEntryFromDb(
 	sId string,
 	sDate string,
-	drRef int,
-	crRef int,
+	debitAccount *account.Account,
+	creditAccount *account.Account,
 	cents int,
 	explanation string,
 	intPosted int,
-) (Entry, error) {
-	id, err := id.ParseString(sId)
+) (*Entry, error) {
+	newId, err := id.ParseString(sId)
 	if err != nil {
-		return Entry{}, err
+		return nil, err
 	}
 
-	date, err := time.Parse(time.DateOnly, sDate)
+	date, err := time.Parse(time.RFC3339, sDate)
 	if err != nil {
-		return Entry{}, err
+		return nil, err
 	}
 
 	amount := currency.Currency(cents)
@@ -65,11 +65,11 @@ func NewEntryFromDb(
 		posted = true
 	}
 
-	return Entry{
-		id: id,
+	return &Entry{
+		id: newId,
 		date: date,
-		debitAccountRef: drRef,
-		creditAccountRef: crRef,
+		debitAccount: debitAccount,
+		creditAccount: creditAccount,
 		amount: amount,
 		explanation: explanation,
 		posted: posted,
@@ -84,12 +84,12 @@ func (e *Entry) GetDate() time.Time {
 	return e.date
 }
 
-func (e *Entry) GetDebitAccountRef() int {
-	return e.debitAccountRef
+func (e *Entry) GetDebitAccount() *account.Account {
+	return e.debitAccount
 }
 
-func (e *Entry) GetCreditAccountRef() int {
-	return e.creditAccountRef
+func (e *Entry) GetCreditAccount() *account.Account {
+	return e.creditAccount
 }
 
 func (e *Entry) GetAmount() currency.Currency {
@@ -115,16 +115,16 @@ func (e *Entry) Post() {
 	e.posted = true
 }
 
-func (e Entry) Format(debitAccountName, creditAccountName string) string {
+func (e *Entry) String() string {
 	var entry string = " "
 	entry += fmt.Sprintf("%-*s", 19, e.date.Format(time.DateTime))
 	entry += " │ "
-	entry += fmt.Sprintf("%-*s", account.MaxNameLength + 2, debitAccountName)
+	entry += fmt.Sprintf("%-*s", account.MaxNameLength + 2, e.debitAccount.GetName())
 	entry += " │ "
 	if e.posted {
-		entry += fmt.Sprintf("%*d", 3, e.debitAccountRef)
+		entry += fmt.Sprintf("%*d", 4, e.debitAccount.GetRef())
 	} else {
-		entry += strings.Repeat(" ", 3)
+		entry += strings.Repeat(" ", 4)
 	}
 	entry += " │ "
 	entry += fmt.Sprintf("%*s", 12, e.amount.String())
@@ -132,12 +132,12 @@ func (e Entry) Format(debitAccountName, creditAccountName string) string {
 	entry += " "
 	entry += strings.Repeat(" ", 19)
 	entry += " │   "
-	entry += fmt.Sprintf("%-*s", account.MaxNameLength, creditAccountName)
+	entry += fmt.Sprintf("%-*s", account.MaxNameLength, e.creditAccount.GetName())
 	entry += " │ "
 	if e.posted {
-		entry += fmt.Sprintf("%*d", 3, e.creditAccountRef)
+		entry += fmt.Sprintf("%*d", 4, e.creditAccount.GetRef())
 	} else {
-		entry += strings.Repeat(" ", 3)
+		entry += strings.Repeat(" ", 4)
 	}
 	entry += " │ "
 	entry += strings.Repeat(" ", 12)
@@ -149,7 +149,7 @@ func (e Entry) Format(debitAccountName, creditAccountName string) string {
 	entry += " │     "
 	entry += fmt.Sprintf("%-*s", MaxExplanationLength, e.explanation)
 	entry += " │ "
-	entry += strings.Repeat(" ", 3)
+	entry += strings.Repeat(" ", 4)
 	entry += " │ "
 	entry += strings.Repeat(" ", 12)
 	entry += " │ "

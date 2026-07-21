@@ -3,7 +3,6 @@
 <!-- TODO: Journal get entries posted -->
 <!-- TODO: Get general ledger -->
 <!-- TODO: Get account ledger -->
-<!-- TODO: View journal from date to date-->
 <!-- TODO: Implement database importing functionality -->
 <!-- TODO: Create testing database -->
 <!-- TODO: Populate testing database -->

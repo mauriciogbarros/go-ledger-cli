@@ -10,7 +10,10 @@ import (
 	"go.mod/db"
 	"go.mod/internal/account"
 	"go.mod/internal/chart"
+	"go.mod/internal/currency"
+	"go.mod/internal/entry"
 	"go.mod/internal/id"
+	"go.mod/internal/journal"
 	"go.mod/internal/ledger"
 	"go.mod/internal/ui"
 )
@@ -49,6 +52,12 @@ func Run() (string, error) {
 		return "", err
 	}
 
+	var journal *journal.Journal = journal.NewJournal("General Journal", chart)
+	err = db.InitializeJournal(database)
+	if err != nil {
+		return "", err
+	}
+
 	switch args[0] {
 	case "view-types":
 		fmt.Println(ledger.PrintTypes())
@@ -59,13 +68,13 @@ func Run() (string, error) {
 		return "Ok", nil
 
 	case "view-journal":
-		return runViewJournal(database, chart)
+		return runViewJournal(database, journal, chart)
 
 	case "new-account":
 		return runNewAccount(chart, database, args[1:])
 
 	case "new-entry":
-		return runNewEntry(chart, args[1:])
+		return runNewEntry(chart, database, args[1:])
 		
 	default:
 		return "Unknown command" + args[0], nil
@@ -75,18 +84,31 @@ func Run() (string, error) {
 func runHelp() {
 		fmt.Println("Available commands:")
 		fmt.Println("───────────────────")
-		fmt.Println("commands           - Show this help")
+		fmt.Println("help               - Show this help")
 		fmt.Println("view-types         - Show account types")
-		fmt.Println("view-journal       - Show journal entries")
 		fmt.Println("view-chart         - Show chart of accounts")
-		fmt.Println("new-account [args] - Add a new account to the chart")
+		fmt.Println("view-journal       - Show journal entries")
+		fmt.Println("new-account <name> - Add a new account to the chart")
 		fmt.Println("new-entry <amount> - Add a new entry to the journal")
 		fmt.Println()
 
 }
 
-func runViewJournal(database *sql.DB, chart *chart.ChartOfAccounts) (string, error) {
-	fmt.Println("View journal - to be implemented")
+func runViewJournal(database *sql.DB, journal *journal.Journal, chart *chart.ChartOfAccounts) (string, error) {
+	fmt.Println("View journal between dates.")
+	fmt.Println("To view entries from start of journal, press \"return\"")
+	fromDate, err := ui.InputDate("From")
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("To view entries until the end of journal, press \"return\"")
+	toDate, err := ui.InputDate("To")
+	if err != nil {
+		return "", err
+	}
+	entries, err := db.GetEntries(database, chart, fromDate, toDate)
+	journal.SetEntries(entries)
+	fmt.Println(journal)
 	return "Ok", nil
 }
 
@@ -153,48 +175,52 @@ func runNewAccount(chart *chart.ChartOfAccounts, database *sql.DB, args []string
 	return "Account created: " + strconv.Itoa(newAccount.GetRef()) + " - " + newAccount.GetName(), nil
 }
 
-func runNewEntry(chart *chart.ChartOfAccounts, args []string) (string, error) {
-	fmt.Println("New entry - to be implemented")
-	return "Ok", nil
-	// if len(args) != 1 {
-	// 	return "Usage: ledger new-entry <ammount>", nil
-	// }
-	// amount64, err := strconv.ParseFloat(args[0], 64)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// amount := currency.Convert64(amount64)
-	// debitAccountRef, err := ui.MenuGetAccount(chart, 0)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// creditAccountRef, err := ui.MenuGetAccount(chart, 1)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// if debitAccountRef == creditAccountRef {
-	// 	return "", errors.New("Invalid entry: debit and credit accounts must be different.")
-	// }		
-	// explanation, err := ui.MenuGetExplanation()
-	// fmt.Println(len(explanation))
-	// if err != nil {
-	// 	return "", err
-	// }
-	// dr, err := chart.GetAccountByRef(debitAccountRef)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// drName := dr.GetName()
-	// cr, err := chart.GetAccountByRef(creditAccountRef)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// crName := cr.GetName()
-	// newEntry := entry.NewEntry(debitAccountRef, creditAccountRef, amount, explanation)
-	// err = journal.AddEntry(newEntry)
-	// if err != nil {
-	// 	return "", err
-	// }
+func runNewEntry(chart *chart.ChartOfAccounts, database *sql.DB, args []string) (string, error) {
+	if len(args) != 1 {
+		return "Usage: ledger new-entry <ammount>", nil
+	}
 
-	// return "Entry created: Dr = " + drName + "; Cr = " + crName + "; $" + amount.String(), nil
+	amount64, err := strconv.ParseFloat(args[0], 64)
+	if err != nil {
+		return "", err
+	}
+	amount := currency.Convert64(amount64)
+
+	debitAccountRef, err := ui.InputAccountRef(chart, 0)
+	if err != nil {
+		return "", err
+	}
+
+	creditAccountRef, err := ui.InputAccountRef(chart, 1)
+	if err != nil {
+		return "", err
+	}
+
+	if debitAccountRef == creditAccountRef {
+		return "", errors.New("Invalid entry: debit and credit accounts must be different.")
+	}
+
+	explanation, err := ui.InputExplanation()
+	if err != nil {
+		return "", err
+	}
+
+	debitAccount, err := chart.GetAccountByRef(debitAccountRef)
+	if err != nil {
+		return "", err
+	}
+
+	creditAccount, err := chart.GetAccountByRef(creditAccountRef)
+	if err != nil {
+		return "", err
+	}
+
+	newEntry := entry.NewEntry(debitAccount, creditAccount, amount, explanation)
+
+	err = db.AddEntry(database, newEntry)
+	if err != nil {
+		return "", err
+	}
+
+	return "Entry created: Dr = " + debitAccount.GetName() + "; Cr = " + creditAccount.GetName() + "; $" + amount.String(), nil
 }

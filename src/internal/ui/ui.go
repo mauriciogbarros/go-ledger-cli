@@ -14,7 +14,6 @@ import (
 	"go.mod/internal/accountType"
 	"go.mod/internal/chart"
 	"go.mod/internal/id"
-	"go.mod/internal/journal"
 )
 
 var reader = bufio.NewReader(os.Stdin)
@@ -79,13 +78,24 @@ func InputAccountType(chart *chart.ChartOfAccounts) (id.Id, error) {
 	return accountTypeId, nil
 }
 
-func DisplayJournal(journal journal.Journal, fromDate time.Time, toDate time.Time) {
-	fmt.Println(journal)
-	// TODO: move displaying entries from journal.String() to here
-	// TODO: implement date filter
+func InputDate(from_to string) (time.Time, error) {
+	fmt.Printf("%s date (YYYY-MM-DD): ", from_to)
+	dateString, err := reader.ReadString('\n')
+	if err != nil {
+		return time.Time{}, err
+	}
+	dateString = strings.TrimSpace(dateString)
+	if len(dateString) == 0 {
+		return time.Time{}, nil
+	}
+	date, err := time.Parse("2006-01-02", dateString)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return date, nil
 }
 
-func MenuGetAccount(chart *chart.ChartOfAccounts, side int) (int, error) {
+func InputAccountRef(chart *chart.ChartOfAccounts, side int) (int, error) {
 	accounts := chart.GetAccounts()
 
 	width := 1 + 3 + 3 + account.MaxNameLength + 3 + 9 + 1
@@ -102,11 +112,16 @@ func MenuGetAccount(chart *chart.ChartOfAccounts, side int) (int, error) {
 	for _, account := range *accounts {
 		refs = append(refs, account.GetRef())
 		menu += account.String()
+		menu += "\n"
 	}
+
 	menu += strings.Repeat("─", width)
 	fmt.Println(menu)
-	// fmt.Printf("Enter %s account Ref: ", strings.ToLower(account.GetSide()))
-	fmt.Print("Enter account Ref: ")
+	if side == 0 {
+		fmt.Print("Enter debit account Ref: ")
+	} else {
+		fmt.Print("Enter credit account Ref: ")
+	}
 	input, err := reader.ReadString('\n')
 	fmt.Println()
 	if err != nil {
@@ -124,7 +139,7 @@ func MenuGetAccount(chart *chart.ChartOfAccounts, side int) (int, error) {
 	return ref, nil
 }
 
-func MenuGetExplanation() (string, error) {
+func InputExplanation() (string, error) {
 	fmt.Print("Explanation: ")
 	explanation, err := reader.ReadString('\n')
 	explanation = strings.TrimSpace(explanation)

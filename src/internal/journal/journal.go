@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mod/db"
 	"go.mod/internal/account"
 	"go.mod/internal/chart"
 	"go.mod/internal/entry"
@@ -13,32 +12,36 @@ import (
 type Journal struct {
 	name string
 	chart *chart.ChartOfAccounts
-	entries []entry.Entry
+	entries *[]*entry.Entry
 }
 
-func (j *Journal) NewJournal(name string, chart *chart.ChartOfAccounts) error {
-	j.name = name
-	j.chart = chart
-	j.entries = make([]entry.Entry, 0)
-	entries, err := db.GetEntries()
-	if err != nil {
-		return err
+func NewJournal(name string, chart *chart.ChartOfAccounts) *Journal {
+	entries := make([]*entry.Entry, 0)
+	return &Journal{
+		name: name,
+		chart: chart,
+		entries: &entries,
 	}
-	j.entries = append(j.entries, entries...)
-	return nil
 }
 
-func (j *Journal) AddEntry(entry entry.Entry) error {
-	j.entries = append(j.entries, entry)
-	err := db.CreateEntry(entry)
-	if err != nil {
-		return err
-	}
-	return nil
+func (j *Journal) GetName() string {
+	return j.name
+}
+
+func (j *Journal) GetChart() *chart.ChartOfAccounts {
+	return j.chart
+}
+
+func (j *Journal) GetEntries() *[]*entry.Entry {
+	return j.entries
+}
+
+func (j *Journal) SetEntries(entries *[]*entry.Entry) {
+	j.entries = entries
 }
 
 func (j Journal) String() string {
-	var width int = 1 + 19 + 3 + account.MaxNameLength + 2 + 9 + 12 + 3 + 12 + 1
+	var width int = 1 + 19 + 3 + account.MaxNameLength + 2 + 9 + 12 + 4 + 12 + 1
 	var paddingLeft = (width - len(j.name))/2
 
 	var output string
@@ -52,7 +55,7 @@ func (j Journal) String() string {
 	output += "   "
 	output += fmt.Sprintf("%-*s", account.MaxNameLength + 2, "Accounts & Explanation")
 	output += "   "
-	output += "Ref"
+	output += "Ref "
 	output += "   "
 	output += fmt.Sprintf("%*s", 12, "Debit")
 	output += "   "
@@ -62,26 +65,19 @@ func (j Journal) String() string {
 	output += "─┬─"
 	output += strings.Repeat("─", account.MaxNameLength + 2)
 	output += "─┬─"
-	output += strings.Repeat("─", 3)
+	output += strings.Repeat("─", 4)
 	output += "─┬─"
 	output += strings.Repeat("─", 12)
 	output += "─┬─"
 	output += strings.Repeat("─", 13)
 	output += "\n"
 
-	if len(j.entries) == 0 {
-		output += " No entires\n"
+	if len(*j.entries) == 0 {
+		output += strings.Repeat(" ", 1 + 19 + 3)
+		output += "*No entires\n"
 	} else {
-		for _, e := range j.entries {
-			debitAccount, err := j.chart.GetAccountByRef(e.GetDebitAccountRef())
-			if err != nil {
-				panic(err)
-			}
-			creditAccount, err := j.chart.GetAccountByRef(e.GetCreditAccountRef())
-			if err != nil {
-				panic(err)
-			}
-			output += e.Format(debitAccount.GetName(), creditAccount.GetName())
+		for _, e := range *j.entries {
+			output += e.String()
 		}
 	}
 	return output

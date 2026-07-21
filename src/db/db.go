@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"time"
 
 	"go.mod/internal/account"
 	"go.mod/internal/accountType"
@@ -85,7 +86,7 @@ func InitializeChartOfAccounts(db *sql.DB, chart *chart.ChartOfAccounts) error {
 	return nil
 }
 
-func InitializeEntries(db *sql.DB) error {
+func InitializeJournal(db *sql.DB) error {
 	var stmt = `CREATE TABLE IF NOT EXISTS entries (
 		id TEXT PRIMARY KEY,
 		date TEXT NOT NULL,
@@ -163,36 +164,54 @@ func GetAccounts(db *sql.DB) (*[]account.Account, error) {
 	return &accounts, nil
 }
 
-func GetEntries() ([]entry.Entry, error) {
-	return []entry.Entry{}, nil
-	// db, err := sql.Open("sqlite", "./db/ledger.db")
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer db.Close()
+func GetEntries(db *sql.DB, chart *chart.ChartOfAccounts, fromDate time.Time, toDate time.Time) (*[]*entry.Entry, error) {
+	var rows *sql.Rows
+	var err error
+	if fromDate.IsZero() && toDate.IsZero() {
+		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries")
+	} else if fromDate.IsZero() {
+		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries WHERE date < ?", toDate.Format(time.RFC3339))
+	} else if toDate.IsZero() {
+		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries WHERE date > ?", fromDate.Format(time.RFC3339))
+	} else { 
+		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries WHERE date BETWEEN ? AND ?", fromDate.Format(time.RFC3339), toDate.Format(time.RFC3339))
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-	// rows, err := db.Query("SELECT id, date, debit_account_ref, credit_account_ref, cents, explanation, posted FROM entries")
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer rows.Close()
+	var entries []*entry.Entry
+	for rows.Next() {
+		var sId, sDate, explanation, sDrId, sCrId string
+		var cents, intPosted int
+		err := rows.Scan(&sId, &sDate, &sDrId, &sCrId, &cents, &explanation, &intPosted)
+		if err != nil {
+			return nil, err
+		}
 
-	// entries := []entry.Entry{}
-	// for rows.Next() {
-	// 	var sId, sDate, explanation string
-	// 	var drRef, crRef, cents, intPosted int
-	// 	err := rows.Scan(&sId, &sDate, &drRef, &crRef, &cents, &explanation, &intPosted)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	entry, err := entry.NewEntryFromDb(sId, sDate, drRef, crRef, 		cents, explanation, intPosted)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	entries = append(entries, entry)
-	// }
+		debitAccount, err := chart.GetAccountByStringId(sDrId)
+		if err != nil {
+			return nil, err
+		}
 
-	// return entries, nil
+		creditAccount, err := chart.GetAccountByStringId(sCrId)
+		if err != nil {
+			return nil, err
+		}
+
+		entry, err := entry.NewEntryFromDb(sId, sDate, debitAccount, creditAccount, cents, explanation, intPosted)
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return &entries, nil
 }
 
 func AddAccount(db *sql.DB, account *account.Account) error {
@@ -224,31 +243,24 @@ func UpdateAccountTypeRefCounter(db *sql.DB, accountTypeId id.Id, refCounter int
 	return nil
 }
 
-func CreateEntry(newEntry entry.Entry) error {
+func AddEntry(db *sql.DB, newEntry entry.Entry) error {
+	stmt, err := db.Prepare("INSERT INTO entries(id, date, debit_account_id, credit_account_id, cents, explanation, posted) values(?, ?, ?, ?, ?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	sId := newEntry.GetId().String()
+	date := newEntry.GetDate().Format(time.RFC3339)
+	sDrId := newEntry.GetDebitAccount().GetId().String()
+	sCrId := newEntry.GetCreditAccount().GetId().String()
+	amount := int(newEntry.GetAmount())
+	explanation := newEntry.GetExplanation()
+	posted := newEntry.GetPostedInt()
+	_, err = stmt.Exec(sId, date, sDrId, sCrId, amount, explanation, posted)
+	if err != nil {
+		return err
+	}
+
 	return nil
-	// db, err := sql.Open("sqlite", "./db/ledger.db")
-	// if err != nil {
-	// 	return err
-	// }
-	// defer db.Close()
-
-	// stmt, err := db.Prepare("INSERT INTO entries(id, date, debit_account_id, credit_account_id, amount, explanation, posted) values(?, ?, ?, ?, ?, ?, ?)")
-	// if err != nil {
-	// 	return err
-	// }
-	// defer stmt.Close()
-
-	// id := newEntry.GetId().String()
-	// date := newEntry.GetDate().Format(time.RFC3339)
-	// debitAccountId := newEntry.GetDebitAccountRef()
-	// creditAccountId := newEntry.GetCreditAccountRef()
-	// amount := int(newEntry.GetAmount())
-	// explanation := newEntry.GetExplanation()
-	// posted := newEntry.GetPostedInt()
-	// _, err = stmt.Exec(id, date, debitAccountId, creditAccountId, amount, explanation, posted)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// return nil
 }
