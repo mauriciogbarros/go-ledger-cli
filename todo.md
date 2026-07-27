@@ -1,7 +1,7 @@
-<!-- TODO: Implement posting functionality -->
-<!-- TODO: Allow to update an entry if posted == false -->
 <!-- TODO: Journal get entries not posted -->
+<!-- TODO: Implement posting functionality -->
 <!-- TODO: Journal get entries posted -->
+<!-- TODO: Allow to update an entry if posted == false -->
 <!-- TODO: Get general ledger -->
 <!-- TODO: Get account ledger -->
 <!-- TODO: Implement database importing functionality -->

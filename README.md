@@ -210,18 +210,38 @@ type Transaction struct {
 ---
 
 ## User Stories
-### Account Management
-- As a user, I want to create an account so that I can store money
-- As a user, I want to list accounts so that I can see all available accounts
 
-### Transactions
-- As a user, I want to deposit money so that I can increase my balance
-- As a user, I want to withdraw money so that I can use my funds
-- As a user, I want to transfer money so that I can move funds between accounts
+### Views
+#### General Journal (Journal)
+- [ ] As a user, I want to view all journal entries
+- [ ] As a user, I want to view all journal entries between two dates
+- [ ] As a user, I want to view all posted entries
+- [ ] As a user, I want to view all not-posted entries
+- [ ] As a user, I want to view an entry details
 
-### Ledger Visibility
-- As a user, I want to see my balance so that I know how much money I have
-- As a user, I want to see transaction history so that I can track activity
+#### Chart of Accounts (Chart)
+- [ ] As a user, I want to view the "Chart of Accounts"
+- [ ] As a user, I want to view the details for an account type
+- [ ] As a user, I want to view the details for an account
+
+#### Ledger
+- [ ] As a user, I want to view the "General Ledger"
+- [ ] As a user, I want to view the ledger of an account type
+- [ ] As a user, I want to view the ledger of an account
+- [ ] As a user, I want to view the "Trial Balance"
+
+### Create
+- [ ] As a user, I want to create a new entry in the journal
+- [ ] As a user, I want to create a new account
+
+### Update
+- [ ] As a user, I want to update certain details for an entry that is not-posted: date, debit account, credit account, amount, and explanation.
+- [ ] As a user, I want to change the status of an entry to posted
+- [ ] As a user, I want to change the status of an entry to not-posted
+- [ ] As a user, I want to change certain details of an account: name, description
+
+### Delete
+- [ ] As a user, I want to delete an entry that is not-posted
 
 ---
 
@@ -304,3 +324,4 @@ This project is licensed under the [MIT License](./LICENSE.md)
 
 # Notes
 - Value conversion fallow banker's rounding
+- Max account name length: 30 characters

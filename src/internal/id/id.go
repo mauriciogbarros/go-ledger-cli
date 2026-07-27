@@ -8,6 +8,9 @@ func (i Id) String() string {
 	return uuid.UUID(i).String()
 }
 
+func Nil() Id {
+	return Id(uuid.Nil)
+}
 func GenerateNewId() Id {
 	return Id(uuid.New())
 }

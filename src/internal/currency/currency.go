@@ -30,7 +30,7 @@ func (c Currency) String() string {
 	return output + fPart
 }
 
-func Convert64(value float64) Currency {
+func ConvertF64(value float64) Currency {
 	var thous int64 = int64(value * 1000)
 	var tcents int64 = int64(value * 100) * 10
 	var dif = thous - tcents

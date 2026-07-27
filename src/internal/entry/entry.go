@@ -1,6 +1,7 @@
 package entry
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -19,51 +20,49 @@ type Entry struct {
 	creditAccount *account.Account
 	amount currency.Currency
 	explanation string
-	posted bool
+	isPosted bool
 }
 
 func NewEntry(
+	date time.Time,
 	debitAccount *account.Account,
 	creditAccount *account.Account,
 	amount currency.Currency,
 	explanation string,
-) Entry {
-	return Entry{
+) *Entry {
+	return &Entry{
 		id: id.GenerateNewId(),
-		date: time.Now(),
+		date: date,
 		debitAccount: debitAccount,
 		creditAccount: creditAccount,
 		amount: amount,
 		explanation: explanation,
-		posted: false,
+		isPosted: false,
 	}
 }
 
-func NewEntryFromDb(
+func NewDbEntry(
 	sId string,
 	sDate string,
 	debitAccount *account.Account,
 	creditAccount *account.Account,
 	cents int,
 	explanation string,
-	intPosted int,
+	intIsPosted int,
 ) (*Entry, error) {
 	newId, err := id.ParseString(sId)
 	if err != nil {
 		return nil, err
 	}
 
-	date, err := time.Parse(time.RFC3339, sDate)
+	date, err := time.Parse(time.DateTime, sDate)
 	if err != nil {
 		return nil, err
 	}
 
 	amount := currency.Currency(cents)
 
-	posted := false
-	if intPosted == 1 {
-		posted = true
-	}
+	isPosted := intIsPosted == 1
 
 	return &Entry{
 		id: newId,
@@ -72,8 +71,12 @@ func NewEntryFromDb(
 		creditAccount: creditAccount,
 		amount: amount,
 		explanation: explanation,
-		posted: posted,
+		isPosted: isPosted,
 	}, nil
+}
+
+func (e *Entry) GetEntry() *Entry {
+	return e
 }
 
 func (e *Entry) GetId() id.Id {
@@ -100,61 +103,59 @@ func (e *Entry) GetExplanation() string {
 	return e.explanation
 }
 
-func (e *Entry) GetPostedInt() int {
-	if e.posted {
-		return 1
-	}
-	return 0
-}
-
 func (e *Entry) IsPosted() bool {
-	return e.posted
+	return e.isPosted
 }
 
-func (e *Entry) Post() {
-	e.posted = true
+func (e *Entry) UpdateEntry(entry Entry) (*Entry, error) {
+	if e.isPosted {
+		return nil, errors.New("journal entry posted.")
+	}
+
+	e.date = entry.date
+	e.debitAccount = entry.debitAccount
+	e.creditAccount = entry.creditAccount
+	e.amount = entry.amount
+	e.explanation = entry.explanation
+
+	return e, nil
+}
+
+func (e *Entry) Post() error {
+	if e.isPosted {
+		return errors.New("journal entry already posted.")
+	}
+
+	e.isPosted = true
+
+	return nil
 }
 
 func (e *Entry) String() string {
-	var entry string = " "
-	entry += fmt.Sprintf("%-*s", 19, e.date.Format(time.DateTime))
-	entry += " │ "
-	entry += fmt.Sprintf("%-*s", account.MaxNameLength + 2, e.debitAccount.GetName())
-	entry += " │ "
-	if e.posted {
-		entry += fmt.Sprintf("%*d", 4, e.debitAccount.GetRef())
+	var output string
+	output += "          Journal Entry Details\n"
+	output += strings.Repeat("─", 12)
+	output += "─┬─"
+	output += strings.Repeat("─", 36)
+	output += "\n"
+	output += fmt.Sprintf("          Id │ %s\n", e.id.String())	
+	output += fmt.Sprintf("        Date │ %s\n", e.date.Format(time.DateTime))
+	output += fmt.Sprintf("      Amount │ %s\n", e.amount.String())
+	output += fmt.Sprintf("       Debit │ %s", e.debitAccount.GetName())
+	if e.isPosted {
+		output += fmt.Sprintf(" (%d)\n", e.debitAccount.GetRef())
 	} else {
-		entry += strings.Repeat(" ", 4)
+		output += "\n"
 	}
-	entry += " │ "
-	entry += fmt.Sprintf("%*s", 12, e.amount.String())
-	entry += " │\n"
-	entry += " "
-	entry += strings.Repeat(" ", 19)
-	entry += " │   "
-	entry += fmt.Sprintf("%-*s", account.MaxNameLength, e.creditAccount.GetName())
-	entry += " │ "
-	if e.posted {
-		entry += fmt.Sprintf("%*d", 4, e.creditAccount.GetRef())
+	output += fmt.Sprintf("      Credit │ %s", e.creditAccount.GetName())
+	if e.isPosted {
+		output += fmt.Sprintf(" (%d)\n", e.creditAccount.GetRef())
 	} else {
-		entry += strings.Repeat(" ", 4)
+		output += "\n"
 	}
-	entry += " │ "
-	entry += strings.Repeat(" ", 12)
-	entry += " │ "
-	entry += fmt.Sprintf("%*s", 12, e.amount.String())
-	entry += "\n"
-	entry += " "
-	entry += strings.Repeat(" ", 19)
-	entry += " │     "
-	entry += fmt.Sprintf("%-*s", MaxExplanationLength, e.explanation)
-	entry += " │ "
-	entry += strings.Repeat(" ", 4)
-	entry += " │ "
-	entry += strings.Repeat(" ", 12)
-	entry += " │ "
-	entry += strings.Repeat(" ", 12)
-	entry += "\n"
+	output += fmt.Sprintf(" Explanation │ %s\n", e.explanation)
+	output += "\n"
 
-	return entry
+	return output
 }
+

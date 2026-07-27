@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
-	"go.mod/db"
+	"go.mod/database"
 	"go.mod/internal/account"
-	"go.mod/internal/chart"
-	"go.mod/internal/currency"
 	"go.mod/internal/entry"
-	"go.mod/internal/id"
-	"go.mod/internal/journal"
 	"go.mod/internal/ledger"
 	"go.mod/internal/ui"
 )
@@ -22,99 +20,331 @@ func Run() (string, error) {
 	args := os.Args[1:]
 	fmt.Println()
 	if len(args) == 0 {
-		fmt.Println("Usage: ledger <command> [args]")
-		fmt.Println("Enter \"help\" to view commands.")
-		return "Ok", nil
+		var msg string
+		msg += "Usage: ledger <command> [args]\n"
+		msg += "Enter \"ledger help\" to view commands."
+		return "", errors.New(msg)
 	}
 
-	if args[0] == "help" {
-		runHelp()
-		return "Ok", nil
+	if args[0] == "help" {		
+		return runHelp()
 	}
 
 	var err error
-	var database *sql.DB
-	database, err = sql.Open("sqlite", "./db/ledger.db")
+	var db *sql.DB
+	db, err = sql.Open("sqlite", "./database/ledger.db")
 	if err != nil {
 		return "", err
 	}
-	defer database.Close()
-
-	var ledger *ledger.Ledger = ledger.NewLedger("General Ledger")
-	err = db.InitializeLedger(database, ledger)
-	if err != nil {
-		return "", err
-	}
-
-	var chart *chart.ChartOfAccounts = chart.NewChartOfAccounts("Chart of Accounts", ledger)
-	err = db.InitializeChartOfAccounts(database, chart)
+	defer db.Close()
+	err = database.Initialize(db)
 	if err != nil {
 		return "", err
 	}
 
-	var journal *journal.Journal = journal.NewJournal("General Journal", chart)
-	err = db.InitializeJournal(database)
+	ledger := ledger.NewLedger()
+	ledger.CreateChart()
+	accountTypes, err := database.GetAccountTypes(db)
 	if err != nil {
-		return "", err
+		return "", nil
 	}
+	ledger.SetChartAccountTypes(accountTypes)
+	ledger.CreateJournal()
 
 	switch args[0] {
-	case "view-types":
-		fmt.Println(ledger.PrintTypes())
-		return "Ok", nil
+	case "view-ledger":
+		return runViewLedger(db, ledger, args[1:])
 
 	case "view-chart":
-		fmt.Println(chart)
-		return "Ok", nil
+		return runViewChart(db, ledger, args[1:])
+	
+	case "view-types":
+		return runViewTypes(db, ledger, args[1:])
 
 	case "view-journal":
-		return runViewJournal(database, journal, chart)
+		return runViewJournal(db, ledger, args[1:])
 
 	case "new-account":
-		return runNewAccount(chart, database, args[1:])
+		return runNewAccount(db, ledger, args[1:])
 
 	case "new-entry":
-		return runNewEntry(chart, database, args[1:])
+		return runNewEntry(db, ledger, args[1:])
 		
 	default:
 		return "Unknown command" + args[0], nil
 	}
 }
 
-func runHelp() {
+func runHelp() (string, error) {
 		fmt.Println("Available commands:")
 		fmt.Println("───────────────────")
 		fmt.Println("help               - Show this help")
-		fmt.Println("view-types         - Show account types")
-		fmt.Println("view-chart         - Show chart of accounts")
-		fmt.Println("view-journal       - Show journal entries")
+		fmt.Println("view-chart [arg]   - Show chart of accounts")
+		fmt.Println("view-types [arg]   - Show account types information")
+		fmt.Println("view-journal [arg] - Show journal entries")
 		fmt.Println("new-account <name> - Add a new account to the chart")
 		fmt.Println("new-entry <amount> - Add a new entry to the journal")
 		fmt.Println()
 
+		return "Ok", nil
 }
 
-func runViewJournal(database *sql.DB, journal *journal.Journal, chart *chart.ChartOfAccounts) (string, error) {
-	fmt.Println("View journal between dates.")
-	fmt.Println("To view entries from start of journal, press \"return\"")
-	fromDate, err := ui.InputDate("From")
+func runViewLedger(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
+	accounts, err := database.GetAccounts(db)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("To view entries until the end of journal, press \"return\"")
-	toDate, err := ui.InputDate("To")
+	err = ledger.SetAccounts(accounts)
 	if err != nil {
 		return "", err
 	}
-	entries, err := db.GetEntries(database, chart, fromDate, toDate)
-	journal.SetEntries(entries)
-	fmt.Println(journal)
+
+	switch len(args) {
+	case 0:
+		fmt.Println("To view entries from start of journal, press \"return\"")
+		fromDate, err := ui.InputDate("From")
+		if err != nil {
+			return "", err
+		}
+		fmt.Println("To view entries until the end of journal, press \"return\"")
+		toDate, err := ui.InputDate("To")
+		if err != nil {
+			return "", err
+		}
+		entries, err := database.GetEntriesPostedBetweenDates(db, ledger, fromDate, toDate)
+		if err != nil {
+			return "", err
+		}
+		ledger.SetJournalEntries(entries)
+		fmt.Println(ledger)
+	
+	case 1:
+		switch args[0] {
+		case "help":
+			var msg strings.Builder
+			msg.WriteString("View general ledger:\n")
+			msg.WriteString("Argument options:\n")
+			msg.WriteString("- <empty>: the complete general ledger, between dates (optionally)\n")
+			msg.WriteString("- help: show this help\n")
+			msg.WriteString("- type: view the ledger for an account type, between dates (optionally)\n")
+			msg.WriteString("- account: view the ledger for an account, between dates (optionally)\n")
+
+		case "type":
+			fmt.Println("Ledger for account type - TBI")
+
+		case "account":
+			fmt.Println("Ledger for accoun - TBI")
+		}
+
+	default:
+		return "", errors.New("Usage: ledger view-ledger [arg]")
+	}
+
 	return "Ok", nil
 }
 
-func runNewAccount(chart *chart.ChartOfAccounts, database *sql.DB, args []string) (string, error) {
+func runViewChart(db *sql.DB, ledger *ledger.Ledger, args [] string) (string, error) {
+	switch len(args) {
+	case 0:
+		accounts, err := database.GetAccounts(db)
+		if err != nil {
+			return "", err
+		}
+		err = ledger.SetAccounts(accounts)
+		if err != nil {
+			return "", err
+		}
+		output, err := ledger.ViewChart(0)
+		if err != nil {
+			return "", err
+		}
+		fmt.Println(output)
+		return "Ok", nil
+
+	case 1:
+		switch args[0] {
+		case "help":
+			var msg strings.Builder
+			msg.WriteString("View chart of acccounts\n")
+			msg.WriteString("Argument options:\n")
+			msg.WriteString("- <empty>: view the complete chart of accounts\n")
+			msg.WriteString("- help: show this help\n")
+			msg.WriteString("- type: view the chart for a specific account type\n")
+			fmt.Println(msg.String())
+			return "Ok", nil
+
+		case "type":
+			refPrefix, err := ui.InputAccountTypeRefPrefix(ledger)
+			if err != nil {
+				return "", err
+			}
+			accountType, err := ledger.GetChart().GetAccountTypeByRefPrefix(refPrefix)
+			if err != nil {
+				return "", err
+			}
+			id := accountType.GetId()
+			accounts, err := database.GetTypeAccounts(db, id)
+			if err != nil {
+				return "", err
+			}
+			err = ledger.SetAccounts(accounts)
+			output, err := ledger.ViewChart(refPrefix)
+			if err != nil {
+				return "", err
+			}
+			fmt.Println(output)
+		
+		default:
+			return "", errors.New("Invalid argument")
+		}
+
+	default:
+		return "", errors.New("Usage: ledger view-chart [arg]")
+	}
+
+	return "Ok", nil
+}
+
+func runViewTypes(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
+	switch len(args) {
+	case  0:
+		fmt.Println(ledger.ViewAccountTypes())
+		accounts, err := database.GetAccounts(db)
+		if err != nil {
+			return "", err
+		}
+		err = ledger.SetAccounts(accounts)
+		if err != nil {
+			return "", err
+		}
+
+	case 1:
+		switch args[0] {
+		case "help":
+			var msg strings.Builder
+			msg.WriteString("View account types information\n")
+			msg.WriteString("Argument options:\n")
+			msg.WriteString("<empty>: for all account types\n")
+			msg.WriteString("type: for a specific account type\n")
+			fmt.Println(msg.String())
+
+		case "type":
+			refPrefix, err := ui.InputAccountTypeRefPrefix(ledger)
+			if err != nil {
+				return "", err
+			}
+			accountType, err := ledger.GetChart().GetAccountTypeByRefPrefix(refPrefix)
+			if err != nil {
+				return "", err
+			}
+			id := accountType.GetId()
+			accounts, err := database.GetTypeAccounts(db, id)
+			if err != nil {
+				return "", err
+			}
+			err = ledger.SetAccounts(accounts)
+			output, err := ledger.ViewAccountType(refPrefix)
+			if err != nil {
+				return "", err
+			}
+			fmt.Println(output)
+
+		default:
+			return "", errors.New("Invalid argument")
+		}
+		
+	default:
+		return "", errors.New("Usage: ledger view-types [arg]")
+	}
+	
+	return "Ok", nil
+}
+
+func runViewJournal(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
+	var entries *[]*entry.Entry
+	var err error
+	var fromDate time.Time
+	var toDate time.Time
+
+	accounts, err := database.GetAccounts(db)
+	if err != nil {
+		return "", err
+	}
+	err = ledger.SetAccounts(accounts)
+	if err != nil {
+		return "", err
+	}
+
+	switch len(args) {
+	case 0:
+		entries, err = database.GetEntries(db, ledger)
+		if err != nil {
+			return "", err
+		}
+		ledger.SetJournalEntries(entries)
+		fmt.Println(ledger.ViewJournal())
+
+	case 1:
+		switch args[0] {
+		case "help":
+			var msg strings.Builder
+			msg.WriteString("View journal:\n")
+			msg.WriteString("Argument options:\n")
+			msg.WriteString("- <empty>    - Show all entries\n")
+			msg.WriteString("- help       - Show this help\n")
+			msg.WriteString("- dates      - Show entries from date to date\n")
+			msg.WriteString("- posted     - Show all entries posted\n")
+			msg.WriteString("- not-posted - Show all entries not posted\n")
+			fmt.Println(msg.String())
+
+		case "dates":
+			fmt.Println("To view entries from start of journal, press \"return\"")
+			fromDate, err = ui.InputDate("From")
+			if err != nil {
+				return "", err
+			}
+			fmt.Println("To view entries until the end of journal, press \"return\"")
+			toDate, err = ui.InputDate("To")
+			if err != nil {
+				return "", err
+			}
+
+			entries, err = database.GetEntriesBetweenDates(db, ledger, fromDate, toDate)
+			if err != nil {
+				return "", err
+			}
+			ledger.SetJournalEntries(entries)
+			fmt.Println(ledger.ViewJournal())
+
+		case "posted":
+			entries, err = database.GetEntriesPosted(db, ledger, true)
+			if err != nil {
+				return "", err
+			}
+			ledger.SetJournalEntries(entries)
+			fmt.Println(ledger.ViewJournal())
+			
+		case "not-posted":
+			entries, err = database.GetEntriesPosted(db, ledger, false)
+			if err != nil {
+				return "", err
+			}
+			ledger.SetJournalEntries(entries)
+			fmt.Println(ledger.ViewJournal())
+
+		default:
+			return "", errors.New("Invalid argument")
+		}
+	default:
+		return "", errors.New("Usage: ledger view-journal [arg]")
+	}
+
+	return "Ok", nil
+}
+
+func runNewAccount(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
 	var name string
-	var accTypeId id.Id
+	var accTypeRefPrefix int
 	var err error
 	switch len(args) {
 	case 0:
@@ -123,7 +353,7 @@ func runNewAccount(chart *chart.ChartOfAccounts, database *sql.DB, args []string
 			return "", err
 		}
 
-		accTypeId, err = ui.InputAccountType(chart)
+		accTypeRefPrefix, err = ui.InputAccountTypeRefPrefix(ledger)
 		if err != nil {
 			return "", err
 		}
@@ -134,7 +364,7 @@ func runNewAccount(chart *chart.ChartOfAccounts, database *sql.DB, args []string
 		}
 		name = args[0]
 
-		accTypeId, err = ui.InputAccountType(chart)
+		accTypeRefPrefix, err = ui.InputAccountTypeRefPrefix(ledger)
 		if err != nil {
 			return "", err
 		}
@@ -143,55 +373,40 @@ func runNewAccount(chart *chart.ChartOfAccounts, database *sql.DB, args []string
 		return "", errors.New("Usage: ledger new-account [name]")
 	}
 
-	newAccount := account.NewAccount(name, accTypeId)
-	ledger := chart.GetLedger()
-	accountType, err := ledger.GetAccountTypeById(accTypeId)
+	newAccount, err := ledger.CreateAccount(name, accTypeRefPrefix)
 	if err != nil {
 		return "", err
 	}
 
-	err = chart.AddAccount(newAccount)
+	err = database.AddAccount(db, newAccount)
 	if err != nil {
 		return "", err
 	}
 
-	err = accountType.AddAccount(newAccount)
-	if err != nil {
-		id := newAccount.GetId()
-		chart.RemoveAccount(id)
-		newAccount = nil
-		return "", err
-	}
-
-	err = db.AddAccount(database, newAccount)
-	if err != nil {
-		id := newAccount.GetId()
-		chart.RemoveAccount(id)
-		newAccount = nil
-		return "", err
-	}
-
-	db.UpdateAccountTypeRefCounter(database, accTypeId, accountType.GetRefCounter())
-	return "Account created: " + strconv.Itoa(newAccount.GetRef()) + " - " + newAccount.GetName(), nil
+	return fmt.Sprintf("Account created: %s (%d)", newAccount.GetName(), newAccount.GetRef()), nil
 }
 
-func runNewEntry(chart *chart.ChartOfAccounts, database *sql.DB, args []string) (string, error) {
+func runNewEntry(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
 	if len(args) != 1 {
-		return "Usage: ledger new-entry <ammount>", nil
+		return "Usage: ledger new-entry <amount>", nil
 	}
 
-	amount64, err := strconv.ParseFloat(args[0], 64)
-	if err != nil {
-		return "", err
-	}
-	amount := currency.Convert64(amount64)
-
-	debitAccountRef, err := ui.InputAccountRef(chart, 0)
+	date, err := ui.InputDate("Entry")
 	if err != nil {
 		return "", err
 	}
 
-	creditAccountRef, err := ui.InputAccountRef(chart, 1)
+	amountF64, err := strconv.ParseFloat(args[0], 64)
+	if err != nil {
+		return "", err
+	}
+
+	debitAccountRef, err := ui.InputAccountRef(ledger, "debit")
+	if err != nil {
+		return "", err
+	}
+
+	creditAccountRef, err := ui.InputAccountRef(ledger, "credit")
 	if err != nil {
 		return "", err
 	}
@@ -205,22 +420,15 @@ func runNewEntry(chart *chart.ChartOfAccounts, database *sql.DB, args []string) 
 		return "", err
 	}
 
-	debitAccount, err := chart.GetAccountByRef(debitAccountRef)
+	newEntry, err := ledger.CreateJournalEntry(date, debitAccountRef, creditAccountRef, amountF64, explanation)
+	if err != nil {
+		return "", nil
+	}
+
+	err = database.AddEntry(db, newEntry)
 	if err != nil {
 		return "", err
 	}
 
-	creditAccount, err := chart.GetAccountByRef(creditAccountRef)
-	if err != nil {
-		return "", err
-	}
-
-	newEntry := entry.NewEntry(debitAccount, creditAccount, amount, explanation)
-
-	err = db.AddEntry(database, newEntry)
-	if err != nil {
-		return "", err
-	}
-
-	return "Entry created: Dr = " + debitAccount.GetName() + "; Cr = " + creditAccount.GetName() + "; $" + amount.String(), nil
+	return "Entry created: Dr = " + newEntry.GetDebitAccount().GetName() + "; Cr = " + newEntry.GetCreditAccount().GetName() + "; $" + newEntry.GetAmount().String(), nil
 }

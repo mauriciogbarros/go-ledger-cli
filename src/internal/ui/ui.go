@@ -12,8 +12,7 @@ import (
 
 	"go.mod/internal/account"
 	"go.mod/internal/accountType"
-	"go.mod/internal/chart"
-	"go.mod/internal/id"
+	"go.mod/internal/ledger"
 )
 
 var reader = bufio.NewReader(os.Stdin)
@@ -35,51 +34,42 @@ func InputAccountName() (string, error) {
 	return name, nil
 }
 
-func InputAccountType(chart *chart.ChartOfAccounts) (id.Id, error) {
-	ledger := chart.GetLedger()
+func InputAccountTypeRefPrefix(ledger *ledger.Ledger) (int, error) {
 	accountTypes := ledger.GetAccountTypes()
 	options := make([]int, 0)
 	fmt.Println("Choose the account type:")
 	for _, at := range *accountTypes {
-		option := at.GetRefGroup() / 1000
-		options = append(options, option)
-		fmt.Printf("%d. %s\n", option, at.GetName())
+		options = append(options, at.GetRefPrefix())
+		fmt.Printf("%d. %s\n", at.GetRefPrefix(), at.GetName())
 	}
 	fmt.Println(strings.Repeat("─", 3 + accountType.MaxNameLength))
 	fmt.Print("Choice: ")
 
 	input, err := reader.ReadString('\n')
 	if err != nil {
-		return id.Id{}, err
+		return 0, err
 	}
 	input = strings.TrimSpace(input)
 	choice, err := strconv.Atoi(input)
 	if err != nil {
-		return id.Id{}, errors.New("Invalid input")
+		return 0, errors.New("Invalid input")
 	}
 
-	isValidChoice := false
-	for _, option := range options {
-		if choice == option {
-			isValidChoice = true
+	exists := false
+	for _, o := range options {
+		if choice == o {
+			exists = true
 			break
 		}
 	}
-	if !isValidChoice {
-		return id.Id{}, errors.New("Invalid choice")
+	if !exists {
+		return 0, errors.New("Invalid choice.")
 	}
-
-	accountType, err := ledger.GetAccountTypeByRef(choice * 1000)
-	if err != nil {
-		return id.Id{}, err
-	}
-	
-	accountTypeId := accountType.GetId()
-	return accountTypeId, nil
+	return choice, nil
 }
 
-func InputDate(from_to string) (time.Time, error) {
-	fmt.Printf("%s date (YYYY-MM-DD): ", from_to)
+func InputDate(dateField string) (time.Time, error) {
+	fmt.Printf("%s date (YYYY-MM-DD HH:MM:SS): ", dateField)
 	dateString, err := reader.ReadString('\n')
 	if err != nil {
 		return time.Time{}, err
@@ -88,40 +78,35 @@ func InputDate(from_to string) (time.Time, error) {
 	if len(dateString) == 0 {
 		return time.Time{}, nil
 	}
-	date, err := time.Parse("2006-01-02", dateString)
+	date, err := time.Parse(time.DateTime, dateString)
 	if err != nil {
 		return time.Time{}, err
 	}
 	return date, nil
 }
 
-func InputAccountRef(chart *chart.ChartOfAccounts, side int) (int, error) {
-	accounts := chart.GetAccounts()
-
+func InputAccountRef(ledger *ledger.Ledger, side string) (int, error) {
+	accounts := ledger.GetAccounts()
 	width := 1 + 3 + 3 + account.MaxNameLength + 3 + 9 + 1
-	var menu string = ""
-	menu += " Ref   Accounts\n"
-	menu += "─"
-	menu += strings.Repeat("─", 3)
-	menu += "─┬─"
-	menu += strings.Repeat("─", account.MaxNameLength)
-	menu += "─┬─"
-	menu += strings.Repeat("─", 9 + 1)
-	menu += "\n"
+	var menu strings.Builder
+	menu.WriteString(" Ref   Accounts\n")
+	menu.WriteString("─")
+	menu.WriteString(strings.Repeat("─", 3))
+	menu.WriteString("─┬─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
+	menu.WriteString("─┬─")
+	menu.WriteString(strings.Repeat("─", 9 + 1))
+	menu.WriteString("\n")
 	var refs []int
 	for _, account := range *accounts {
 		refs = append(refs, account.GetRef())
-		menu += account.String()
-		menu += "\n"
+		menu.WriteString(account.String())
+		menu.WriteString("\n")
 	}
 
-	menu += strings.Repeat("─", width)
-	fmt.Println(menu)
-	if side == 0 {
-		fmt.Print("Enter debit account Ref: ")
-	} else {
-		fmt.Print("Enter credit account Ref: ")
-	}
+	menu.WriteString(strings.Repeat("─", width))
+	menu.WriteString("\n")
+	fmt.Fprintf(&menu, "Enter %s account Reef: ", side)
 	input, err := reader.ReadString('\n')
 	fmt.Println()
 	if err != nil {

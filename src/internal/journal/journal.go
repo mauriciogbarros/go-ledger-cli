@@ -1,25 +1,25 @@
 package journal
 
 import (
+	"errors"
 	"fmt"
+	"sort"
 	"strings"
+	"time"
 
-	"go.mod/internal/account"
-	"go.mod/internal/chart"
 	"go.mod/internal/entry"
+	"go.mod/internal/id"
 )
 
 type Journal struct {
 	name string
-	chart *chart.ChartOfAccounts
-	entries *[]*entry.Entry
+	entries *map[id.Id]*entry.Entry
 }
 
-func NewJournal(name string, chart *chart.ChartOfAccounts) *Journal {
-	entries := make([]*entry.Entry, 0)
+func NewJournal() *Journal {
+	entries := make(map[id.Id]*entry.Entry, 0)
 	return &Journal{
-		name: name,
-		chart: chart,
+		name: "General Journal",
 		entries: &entries,
 	}
 }
@@ -28,57 +28,126 @@ func (j *Journal) GetName() string {
 	return j.name
 }
 
-func (j *Journal) GetChart() *chart.ChartOfAccounts {
-	return j.chart
-}
-
 func (j *Journal) GetEntries() *[]*entry.Entry {
-	return j.entries
+	entries := make([]*entry.Entry, 0)
+	for _, entry := range *j.entries {
+		entries = append(entries, entry)
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].GetDate().Before(entries[j].GetDate())
+	})
+
+	return &entries
 }
 
-func (j *Journal) SetEntries(entries *[]*entry.Entry) {
-	j.entries = entries
+func (j *Journal) GetEntryById(id id.Id) (*entry.Entry, error) {
+	entry, exist := (*j.entries)[id]
+	if !exist {
+		return nil, errors.New("Entry id not found.")
+	}
+	
+	return entry, nil
+}
+
+func (j *Journal) SetEntries(entries *[]*entry.Entry) error {
+	if entries == nil {
+		return errors.New("No entries")
+	}
+	clear(*j.entries)
+	for _, e := range *entries {
+		(*j.entries)[e.GetId()] = e
+	}
+	return nil
 }
 
 func (j Journal) String() string {
-	var width int = 1 + 19 + 3 + account.MaxNameLength + 2 + 9 + 12 + 4 + 12 + 1
+	var width int = 1 + 19 + 3 + 34 + 3 + 4 + 3 + 12 + 3 + 12 + 1
 	var paddingLeft = (width - len(j.name))/2
-
-	var output string
-	output += strings.Repeat(" ", paddingLeft)
-	output += j.name
-	output += "\n"
-	output += strings.Repeat("─", width)
-	output += "\n"
-	output += " "
-	output += fmt.Sprintf("%-*s", 19, "Date")
-	output += "   "
-	output += fmt.Sprintf("%-*s", account.MaxNameLength + 2, "Accounts & Explanation")
-	output += "   "
-	output += "Ref "
-	output += "   "
-	output += fmt.Sprintf("%*s", 12, "Debit")
-	output += "   "
-	output += fmt.Sprintf("%*s", 12, "Credit")
-	output += "\n"
-	output += strings.Repeat("─", 20)
-	output += "─┬─"
-	output += strings.Repeat("─", account.MaxNameLength + 2)
-	output += "─┬─"
-	output += strings.Repeat("─", 4)
-	output += "─┬─"
-	output += strings.Repeat("─", 12)
-	output += "─┬─"
-	output += strings.Repeat("─", 13)
-	output += "\n"
+	var output strings.Builder
+	output.WriteString(strings.Repeat(" ", paddingLeft))
+	output.WriteString(j.name)
+	output.WriteString("\n")
+	output.WriteString(strings.Repeat("─", 1 + 19))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", 34))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", 4))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", 12))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", 12 + 1))
+	output.WriteString("\n")
+	output.WriteString(" ")
+	output.WriteString(fmt.Sprintf("%-*s", 19, "Date"))
+	output.WriteString(" │ ")
+	output.WriteString(fmt.Sprintf("%-*s", 34, "Accounts & Explanation"))
+	output.WriteString(" │ ")
+	output.WriteString("Ref ")
+	output.WriteString(" │ ")
+	output.WriteString(fmt.Sprintf("%*s", 12, "Debit"))
+	output.WriteString(" │ ")
+	output.WriteString(fmt.Sprintf("%*s", 12, "Credit"))
+	output.WriteString("\n")
+	output.WriteString(strings.Repeat("─", 1 + 19))
+	output.WriteString("─┼─")
+	output.WriteString(strings.Repeat("─", 34))
+	output.WriteString("─┼─")
+	output.WriteString(strings.Repeat("─", 4))
+	output.WriteString("─┼─")
+	output.WriteString(strings.Repeat("─", 12))
+	output.WriteString("─┼─")
+	output.WriteString(strings.Repeat("─", 12 + 1))
+	output.WriteString("\n")
 
 	if len(*j.entries) == 0 {
-		output += strings.Repeat(" ", 1 + 19 + 3)
-		output += "*No entires\n"
+		output.WriteString(strings.Repeat(" ", 1 + 19 + 3))
+		output.WriteString("*No entires\n")
 	} else {
-		for _, e := range *j.entries {
-			output += e.String()
+		entries := j.GetEntries()
+		for _, e := range *entries {
+			output.WriteString(" ")
+			output.WriteString(fmt.Sprintf("%-*s", 19, e.GetDate().Format(time.DateTime)))
+			output.WriteString(" │ ")
+			output.WriteString(fmt.Sprintf("%-*s", 38 + 2, e.GetDebitAccount().GetName()))
+			output.WriteString(" │ ")
+			if e.IsPosted() {
+				output.WriteString(fmt.Sprintf("%*d", 4, e.GetDebitAccount().GetRef()))
+			} else {
+				output.WriteString(strings.Repeat(" ", 4))
+			}
+			output.WriteString(" │ ")
+			output.WriteString(fmt.Sprintf("%*d", 12, e.GetAmount()))
+			output.WriteString(" │\n")
+			output.WriteString(" ")
+			output.WriteString(strings.Repeat(" ", 19))
+			output.WriteString(" │   ")
+			output.WriteString(fmt.Sprintf("%-*s", 38, e.GetCreditAccount().GetName()))
+			output.WriteString(" │ ")
+			if e.IsPosted() {
+				output.WriteString(fmt.Sprintf("%*d", 4, e.GetCreditAccount().GetRef()))
+			} else {
+				output.WriteString(strings.Repeat(" ", 4))
+			}
+			output.WriteString(" │ ")
+			output.WriteString(strings.Repeat(" ", 12))
+			output.WriteString(" │ ")
+			output.WriteString(fmt.Sprintf("%*s", 12, e.GetAmount().String()))
+			output.WriteString("\n")
+			output.WriteString(" ")
+			output.WriteString(strings.Repeat(" ", 19))
+			output.WriteString(" │     ")
+			output.WriteString(fmt.Sprintf("%-*s", 36, e.GetExplanation()))
+			output.WriteString(" │ ")
+			output.WriteString(strings.Repeat(" ", 4))
+			output.WriteString(" │ ")
+			output.WriteString(strings.Repeat(" ", 12))
+			output.WriteString(" │ ")
+			output.WriteString(strings.Repeat(" ", 12))
+			output.WriteString("\n")
 		}
 	}
-	return output
+	output.WriteString("\n")
+	
+	return output.String()
 }
