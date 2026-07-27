@@ -127,8 +127,8 @@ func (c *Chart) MapAccountsToTypes(accounts *[]*account.Account) error {
 	return nil
 }
 
-func (c *Chart) CreateAccount(name string, accountTypeRefPrefix int) (*account.Account, error) {
-	account := account.NewAccount(name)
+func (c *Chart) CreateAccount(accountTypeRefPrefix int, name string, description string) (*account.Account, error) {
+	account := account.NewAccount(name, description)
 	accountType, err := c.GetAccountTypeByRefPrefix(accountTypeRefPrefix)
 	if err != nil {
 		return nil, err
@@ -138,6 +138,7 @@ func (c *Chart) CreateAccount(name string, accountTypeRefPrefix int) (*account.A
 		return nil, err
 	}
 	account.SetRef(ref)
+	account.SetAccountTypeId(accountType.GetId())
 	return account, nil
 }
 
@@ -163,7 +164,7 @@ func (c *Chart) String(refPrefix int) (string, error) {
 				output.WriteString("* No accounts\n")
 			} else {
 				for _, a := range accounts {
-					output.WriteString(fmt.Sprintf(" %d | %s\n", a.GetRef(), a.GetName()))
+					fmt.Fprintf(&output, " %d   %s\n", a.GetRef(), a.GetName())
 				}
 			}
 			output.WriteString("\n")
@@ -174,7 +175,7 @@ func (c *Chart) String(refPrefix int) (string, error) {
 			return "", err
 		}
 		output.WriteString(" ")
-		output.WriteString(fmt.Sprintf("%-*d", 4, at.GetRefPrefix()))
+		fmt.Fprintf(&output, "%-*d", 4, at.GetRefPrefix())
 		output.WriteString(strings.Repeat(" ", (width - len(at.GetName()) - 1 - 4) / 2))
 		output.WriteString(at.GetName())
 		output.WriteString("\n")
@@ -186,7 +187,7 @@ func (c *Chart) String(refPrefix int) (string, error) {
 			output.WriteString("* No accounts\n")
 		} else {
 			for _, a := range accounts {
-				output.WriteString(fmt.Sprintf(" %d | %s\n", a.GetRef(), a.GetName()))
+				fmt.Fprintf(&output, " %d   %s\n", a.GetRef(), a.GetName())
 			}
 		}
 	}

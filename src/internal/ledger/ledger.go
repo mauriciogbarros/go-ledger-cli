@@ -96,8 +96,8 @@ func (l *Ledger) CreateJournal() {
 	l.journal = journal.NewJournal()
 }
 
-func (l *Ledger) CreateAccount(name string, accountTypeRefPrefix int) (*account.Account, error) {
-	return l.chart.CreateAccount(name, accountTypeRefPrefix)
+func (l *Ledger) CreateAccount(accountTypeRefPrefix int, name string, description string) (*account.Account, error) {
+	return l.chart.CreateAccount(accountTypeRefPrefix, name, description)
 }
 
 func (l *Ledger) CreateJournalEntry(date time.Time, debitAccountRef int, creditAccountRef int, amountF64 float64, explanation string) (entry.Entry, error) {

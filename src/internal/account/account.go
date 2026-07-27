@@ -17,16 +17,19 @@ type Account struct {
 	ref int
 	name string
 	description string
+	accountTypeId id.Id
 	entries *map[id.Id]*AccountEntry
 	balance currency.Currency
 }
 
-func NewAccount(name string) *Account {
+func NewAccount(name string, description string) *Account {
 	entries := make(map[id.Id]*AccountEntry)
 	return &Account{
 		id: id.GenerateNewId(),
 		ref: 0,
 		name: name,
+		description: description,
+		accountTypeId: id.Id{},
 		entries: &entries,
 		balance: currency.Currency(0),
 	}
@@ -36,18 +39,25 @@ func NewDbAccount(
 	sId string,
 	ref int,
 	name string,
+	description string,
+	sAtId string,
 ) (*Account, error) {
 	aId, err := id.ParseString(sId)
 	if err != nil {
 		return nil, err
 	}
-
 	entries := make(map[id.Id]*AccountEntry, 0)
+	atId, err := id.ParseString(sAtId)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Account{
 		id: aId,
 		ref: ref,
 		name: name,
+		description: description,
+		accountTypeId: atId,
 		entries: &entries,
 		balance: currency.Currency(0),
 	}, nil
@@ -67,6 +77,14 @@ func (a *Account) GetRef() int {
 
 func (a *Account) GetName() string {
 	return a.name
+}
+
+func (a *Account) GetDescription() string {
+	return a.description
+}
+
+func (a *Account) GetAccountTypeId() id.Id {
+	return a.accountTypeId
 }
 
 func (a *Account) GetEntries() *[]*AccountEntry {
@@ -99,6 +117,10 @@ func (a *Account) SetRef(ref int) {
 	a.ref = ref
 }
 
+func (a *Account) SetAccountTypeId(id id.Id) {
+	a.accountTypeId = id
+}
+
 func (a *Account) AddEntry(entry *AccountEntry) error {
 	_, exists := (*a.entries)[entry.GetId()]
 	if exists {
@@ -124,18 +146,19 @@ func (a *Account) CalculateBalance() {
 }
 
 func (a *Account) String() string {
-	var output string
-	output += "           Account Details\n"
-	output += strings.Repeat("─", 8)
-	output += "─┬─"
-	output += strings.Repeat("─\n", 36)
-	output += fmt.Sprintf("      Id │ %s\n", a.id.String())
-	output += fmt.Sprintf("     Ref │ %d\n", a.ref)
-	output += fmt.Sprintf("    Name │ %s\n", a.name)
-	output += fmt.Sprintf(" Entries | %d\n", len(*a.entries))
-	output += fmt.Sprintf(" Balance │ %s\n", a.balance.String())
-	output += "\n"
+	var output strings.Builder
+	output.WriteString("           Account Details\n")
+	output.WriteString(strings.Repeat("─", 8))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─\n", 36))
+	fmt.Fprintf(&output, "          Id │ %s\n", a.id.String())
+	fmt.Fprintf(&output, "         Ref │ %d\n", a.ref)
+	fmt.Fprintf(&output, "        Name │ %s\n", a.name)
+	fmt.Fprintf(&output, " Description │ %s\n", a.description)
+	fmt.Fprintf(&output, "     Entries | %d\n", len(*a.entries))
+	fmt.Fprintf(&output, "     Balance │ %s\n", a.balance.String())
+	output.WriteString("\n")
 
-	return output
+	return output.String()
 }
 

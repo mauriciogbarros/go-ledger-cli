@@ -51,7 +51,9 @@ func initializeAccounts(db *sql.DB) error {
 		id TEXT PRIMARY KEY,
 		ref INTEGER NOT NULL UNIQUE,
 		name VARCHAR(255) NOT NULL UNIQUE,
-		description TEXT
+		description TEXT,
+		account_type_id TEXT NOT NULL,
+		FOREIGN KEY(account_type_id) REFERENCES account_types(id)
 	);`
 	_, err := db.Exec(stmt)
 	if err != nil {
@@ -140,7 +142,7 @@ func GetAccountTypes(db *sql.DB) (*map[id.Id]*accountType.AccountType, error) {
 
 func GetAccounts(db *sql.DB) (*[]*account.Account, error) {
 	var rows *sql.Rows
-	rows, err := db.Query("SELECT id, ref, name FROM accounts")
+	rows, err := db.Query("SELECT id, ref, name, description, account_type_id FROM accounts")
 	if err != nil {
 		return nil, err
 	}
@@ -148,14 +150,19 @@ func GetAccounts(db *sql.DB) (*[]*account.Account, error) {
 
 	accounts := make([]*account.Account, 0)
 	for rows.Next() {
-		var sId, aName string
+		var sId, name, sAtId string
+		var description *string
 		var ref int
-		err := rows.Scan(&sId, &ref, &aName)
+		err := rows.Scan(&sId, &ref, &name, &description, &sAtId)
 		if err != nil {
 			return nil, err
 		}
+		desc := ""
+		if description != nil {
+			desc = *description
+		}
 
-		account, err := account.NewDbAccount(sId, ref, aName)
+		account, err := account.NewDbAccount(sId, ref, name, desc, sAtId)
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +178,7 @@ func GetAccounts(db *sql.DB) (*[]*account.Account, error) {
 
 func GetTypeAccounts(db *sql.DB, id id.Id) (*[]*account.Account, error) {
 	var rows *sql.Rows
-	rows, err := db.Query("SELECT id, ref, name FROM accounts WHERE id = ?", id.String())
+	rows, err := db.Query("SELECT id, ref, name, description, account_type_id FROM accounts WHERE account_type_id = ?", id.String())
 	if err != nil {
 		return nil, err
 	}
@@ -179,14 +186,19 @@ func GetTypeAccounts(db *sql.DB, id id.Id) (*[]*account.Account, error) {
 
 	accounts := make([]*account.Account, 0)
 	for rows.Next() {
-		var sId, aName string
+		var sId, name, sAtId string
+		var description *string
 		var ref int
-		err := rows.Scan(&sId, &ref, &aName)
+		err := rows.Scan(&sId, &ref, &name, &description, &sAtId)
 		if err != nil {
 			return nil, err
 		}
+		d := ""
+		if description != nil {
+			d = *description
+		}
 
-		account, err := account.NewDbAccount(sId, ref, aName)
+		account, err := account.NewDbAccount(sId, ref, name, d, sAtId)
 		if err != nil {
 			return nil, err
 		}
@@ -387,7 +399,7 @@ func GetEntriesPosted(db *sql.DB, ledger *ledger.Ledger, arePosted bool) (*[]*en
 }
 
 func AddAccount(db *sql.DB, account *account.Account) error {
-	stmt, err := db.Prepare("INSERT INTO accounts(id, ref, name) values(?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO accounts(id, ref, name, description, account_type_id) values(?, ?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
@@ -396,7 +408,9 @@ func AddAccount(db *sql.DB, account *account.Account) error {
 	sId := account.GetId().String()
 	ref := account.GetRef()
 	name := account.GetName()
-	_, err = stmt.Exec(sId, ref, name)
+	description := account.GetDescription()
+	sAtId := account.GetAccountTypeId().String()
+	_, err = stmt.Exec(sId, ref, name, description, sAtId)
 	if err != nil {
 		return err
 	}

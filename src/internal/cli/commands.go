@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"go.mod/database"
-	"go.mod/internal/account"
 	"go.mod/internal/entry"
 	"go.mod/internal/ledger"
 	"go.mod/internal/ui"
@@ -44,12 +43,12 @@ func Run() (string, error) {
 
 	ledger := ledger.NewLedger()
 	ledger.CreateChart()
+	ledger.CreateJournal()
 	accountTypes, err := database.GetAccountTypes(db)
 	if err != nil {
 		return "", nil
 	}
 	ledger.SetChartAccountTypes(accountTypes)
-	ledger.CreateJournal()
 
 	switch args[0] {
 	case "view-ledger":
@@ -82,7 +81,7 @@ func runHelp() (string, error) {
 		fmt.Println("view-chart [arg]   - Show chart of accounts")
 		fmt.Println("view-types [arg]   - Show account types information")
 		fmt.Println("view-journal [arg] - Show journal entries")
-		fmt.Println("new-account <name> - Add a new account to the chart")
+		fmt.Println("new-account        - Add a new account to the chart")
 		fmt.Println("new-entry <amount> - Add a new entry to the journal")
 		fmt.Println()
 
@@ -188,6 +187,9 @@ func runViewChart(db *sql.DB, ledger *ledger.Ledger, args [] string) (string, er
 				return "", err
 			}
 			err = ledger.SetAccounts(accounts)
+			if err != nil {
+				return "", err
+			}
 			output, err := ledger.ViewChart(refPrefix)
 			if err != nil {
 				return "", err
@@ -197,7 +199,6 @@ func runViewChart(db *sql.DB, ledger *ledger.Ledger, args [] string) (string, er
 		default:
 			return "", errors.New("Invalid argument")
 		}
-
 	default:
 		return "", errors.New("Usage: ledger view-chart [arg]")
 	}
@@ -207,9 +208,9 @@ func runViewChart(db *sql.DB, ledger *ledger.Ledger, args [] string) (string, er
 
 func runViewTypes(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
 	switch len(args) {
-	case  0:
-		fmt.Println(ledger.ViewAccountTypes())
+	case  0:		
 		accounts, err := database.GetAccounts(db)
+		fmt.Println(len(*accounts))
 		if err != nil {
 			return "", err
 		}
@@ -217,6 +218,7 @@ func runViewTypes(db *sql.DB, ledger *ledger.Ledger, args []string) (string, err
 		if err != nil {
 			return "", err
 		}
+		fmt.Println(ledger.ViewAccountTypes())
 
 	case 1:
 		switch args[0] {
@@ -235,10 +237,9 @@ func runViewTypes(db *sql.DB, ledger *ledger.Ledger, args []string) (string, err
 			}
 			accountType, err := ledger.GetChart().GetAccountTypeByRefPrefix(refPrefix)
 			if err != nil {
-				return "", err
+				return "", nil
 			}
-			id := accountType.GetId()
-			accounts, err := database.GetTypeAccounts(db, id)
+			accounts, err := database.GetTypeAccounts(db, accountType.GetId())
 			if err != nil {
 				return "", err
 			}
@@ -343,37 +344,35 @@ func runViewJournal(db *sql.DB, ledger *ledger.Ledger, args []string) (string, e
 }
 
 func runNewAccount(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
-	var name string
-	var accTypeRefPrefix int
-	var err error
-	switch len(args) {
-	case 0:
-		name, err = ui.InputAccountName()
-		if err != nil {
-			return "", err
-		}
-
-		accTypeRefPrefix, err = ui.InputAccountTypeRefPrefix(ledger)
-		if err != nil {
-			return "", err
-		}
-
-	case 1:
-		if len(args[0]) <= 0 || len(args[0]) > account.MaxNameLength {
-			return "", errors.New("Invalid accocunt name")
-		}
-		name = args[0]
-
-		accTypeRefPrefix, err = ui.InputAccountTypeRefPrefix(ledger)
-		if err != nil {
-			return "", err
-		}
-
-	default:
-		return "", errors.New("Usage: ledger new-account [name]")
+	if len(args) > 0 {
+		return "", errors.New("Usage: ledger new-account")
 	}
 
-	newAccount, err := ledger.CreateAccount(name, accTypeRefPrefix)
+	accounts, err := database.GetAccounts(db)
+	if err != nil {
+		return "", err
+	}
+	err = ledger.SetAccounts(accounts)
+	if err != nil {
+		return "", err
+	}
+
+	accTypeRefPrefix, err := ui.InputAccountTypeRefPrefix(ledger)
+	if err != nil {
+		return "", err
+	}
+
+	name, err := ui.InputAccountName()
+	if err != nil {
+		return "", err
+	}
+
+	description, err := ui.InputText("Description")
+	if err != nil {
+		return "", err
+	}
+
+	newAccount, err := ledger.CreateAccount(accTypeRefPrefix, name, description)
 	if err != nil {
 		return "", err
 	}
@@ -415,7 +414,7 @@ func runNewEntry(db *sql.DB, ledger *ledger.Ledger, args []string) (string, erro
 		return "", errors.New("Invalid entry: debit and credit accounts must be different.")
 	}
 
-	explanation, err := ui.InputExplanation()
+	explanation, err := ui.InputText("Explanation")
 	if err != nil {
 		return "", err
 	}

@@ -124,15 +124,15 @@ func InputAccountRef(ledger *ledger.Ledger, side string) (int, error) {
 	return ref, nil
 }
 
-func InputExplanation() (string, error) {
-	fmt.Print("Explanation: ")
+func InputText(fieldName string) (string, error) {
+	fmt.Printf("%s: ", fieldName)
 	explanation, err := reader.ReadString('\n')
 	explanation = strings.TrimSpace(explanation)
 	if err != nil {
 		return "", err
 	}
 	if len(explanation) == 0 {
-		return "", errors.New("Explanation cannot be empty")
+		explanation = ""
 	}
 	return explanation, nil
 }
