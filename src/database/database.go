@@ -32,56 +32,6 @@ func Initialize(db *sql.DB) error {
 	return nil
 }
 
-func initializeAccountTypes(db *sql.DB) error {
-	var stmt = `CREATE TABLE IF NOT EXISTS account_types (
-		id TEXT PRIMARY KEY,
-		name VARCHAR(255) NOT NULL UNIQUE,
-		ref_prefix INTEGER NOT NULL UNIQUE
-	);`
-	_, err := db.Exec(stmt)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func initializeAccounts(db *sql.DB) error {
-	var stmt = `CREATE TABLE IF NOT EXISTS accounts (
-		id TEXT PRIMARY KEY,
-		ref INTEGER NOT NULL UNIQUE,
-		name VARCHAR(255) NOT NULL UNIQUE,
-		description TEXT,
-		account_type_id TEXT NOT NULL,
-		FOREIGN KEY(account_type_id) REFERENCES account_types(id)
-	);`
-	_, err := db.Exec(stmt)
-	if err != nil {
-		return err
-	}
-	
-	return nil
-}
-
-func initializeJournal(db *sql.DB) error {
-	var stmt = `CREATE TABLE IF NOT EXISTS entries (
-		id TEXT PRIMARY KEY,
-		date TEXT NOT NULL,
-		debit_account_id TEXT NOT NULL,
-		credit_account_id TEXT NOT NULL,
-		cents INTEGER NOT NULL,
-		explanation VARCHAR(255) NOT NULL,
-		posted INTEGER NOT NULL,
-		FOREIGN KEY(debit_account_id) REFERENCES accounts(id),
-		FOREIGN KEY(credit_account_id) REFERENCES accounts(id)
-	)`
-	_, err := db.Exec(stmt)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func GetAccountTypes(db *sql.DB) (*map[id.Id]*accountType.AccountType, error) {
 	var count int
@@ -157,12 +107,7 @@ func GetAccounts(db *sql.DB) (*[]*account.Account, error) {
 		if err != nil {
 			return nil, err
 		}
-		desc := ""
-		if description != nil {
-			desc = *description
-		}
-
-		account, err := account.NewDbAccount(sId, ref, name, desc, sAtId)
+		account, err := account.NewDbAccount(sId, ref, name, derefString(description), sAtId)
 		if err != nil {
 			return nil, err
 		}
@@ -193,12 +138,7 @@ func GetTypeAccounts(db *sql.DB, id id.Id) (*[]*account.Account, error) {
 		if err != nil {
 			return nil, err
 		}
-		d := ""
-		if description != nil {
-			d = *description
-		}
-
-		account, err := account.NewDbAccount(sId, ref, name, d, sAtId)
+		account, err := account.NewDbAccount(sId, ref, name, derefString(description), sAtId)
 		if err != nil {
 			return nil, err
 		}
@@ -441,4 +381,62 @@ func AddEntry(db *sql.DB, entry entry.Entry) error {
 	}
 
 	return nil
+}
+
+func initializeAccountTypes(db *sql.DB) error {
+	var stmt = `CREATE TABLE IF NOT EXISTS account_types (
+		id TEXT PRIMARY KEY,
+		name VARCHAR(255) NOT NULL UNIQUE,
+		ref_prefix INTEGER NOT NULL UNIQUE
+	);`
+	_, err := db.Exec(stmt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func initializeAccounts(db *sql.DB) error {
+	var stmt = `CREATE TABLE IF NOT EXISTS accounts (
+		id TEXT PRIMARY KEY,
+		ref INTEGER NOT NULL UNIQUE,
+		name VARCHAR(255) NOT NULL UNIQUE,
+		description TEXT,
+		account_type_id TEXT NOT NULL,
+		FOREIGN KEY(account_type_id) REFERENCES account_types(id)
+	);`
+	_, err := db.Exec(stmt)
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
+func initializeJournal(db *sql.DB) error {
+	var stmt = `CREATE TABLE IF NOT EXISTS entries (
+		id TEXT PRIMARY KEY,
+		date TEXT NOT NULL,
+		debit_account_id TEXT NOT NULL,
+		credit_account_id TEXT NOT NULL,
+		cents INTEGER NOT NULL,
+		explanation VARCHAR(255) NOT NULL,
+		posted INTEGER NOT NULL,
+		FOREIGN KEY(debit_account_id) REFERENCES accounts(id),
+		FOREIGN KEY(credit_account_id) REFERENCES accounts(id)
+	)`
+	_, err := db.Exec(stmt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

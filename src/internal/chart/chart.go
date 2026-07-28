@@ -158,15 +158,7 @@ func (c *Chart) String(refPrefix int) (string, error) {
 			output.WriteString("\n")
 			output.WriteString(strings.Repeat("─", width))
 			output.WriteString("\n")
-			accounts := *at.GetAccounts()
-			if len(accounts) == 0 {
-				output.WriteString(strings.Repeat(" ", 1 + 4 + 3))
-				output.WriteString("* No accounts\n")
-			} else {
-				for _, a := range accounts {
-					fmt.Fprintf(&output, " %d   %s\n", a.GetRef(), a.GetName())
-				}
-			}
+			writeAccounts(&output, *at.GetAccounts())
 			output.WriteString("\n")
 		}
 	} else {
@@ -181,15 +173,7 @@ func (c *Chart) String(refPrefix int) (string, error) {
 		output.WriteString("\n")
 		output.WriteString(strings.Repeat("─", width))
 		output.WriteString("\n")
-		accounts := *at.GetAccounts()
-		if len(accounts) == 0 {
-			output.WriteString(strings.Repeat(" ", 1 + 4 + 3))
-			output.WriteString("* No accounts\n")
-		} else {
-			for _, a := range accounts {
-				fmt.Fprintf(&output, " %d   %s\n", a.GetRef(), a.GetName())
-			}
-		}
+		writeAccounts(&output, *at.GetAccounts())
 	}
 	output.WriteString("\n")
 
@@ -240,4 +224,15 @@ func (c *Chart) ViewAccountType(refPrefix int) (string, error) {
 	}
 
 	return accountType.String(), nil
+}
+
+func writeAccounts(output *strings.Builder, accounts []*account.Account) {
+	if len(accounts) == 0 {
+		output.WriteString(strings.Repeat(" ", 1+4+3))
+		output.WriteString("* No accounts\n")
+	} else {
+		for _, a := range accounts {
+			fmt.Fprintf(output, " %d   %s\n", a.GetRef(), a.GetName())
+		}
+	}
 }

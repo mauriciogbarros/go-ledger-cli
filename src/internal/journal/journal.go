@@ -57,6 +57,9 @@ func (j *Journal) SetEntries(entries *[]*entry.Entry) error {
 	if entries == nil {
 		return errors.New("No entries")
 	}
+	if j.entries == nil {
+		return errors.New("journal entries map is nil")
+	}
 	clear(*j.entries)
 	for _, e := range *entries {
 		if e == nil {

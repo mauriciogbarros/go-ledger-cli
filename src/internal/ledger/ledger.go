@@ -200,10 +200,7 @@ func (l *Ledger) String() string {
 				output += "─"				
 				output += "\n"
 				entries := a.GetEntries()
-				if entries == nil {
-					return ""
-				}
-				if len(*entries) == 0 {
+				if entries == nil || len(*entries) == 0 {
 					output += strings.Repeat(" ", 1 + 19 + 3)
 					output += "*No entries posted"
 					output += "\n"
