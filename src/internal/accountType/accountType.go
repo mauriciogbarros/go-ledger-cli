@@ -83,7 +83,10 @@ func (at *AccountType) GetAccountById(id id.Id) (*account.Account, error) {
 
 func (at *AccountType) GetAccountByRef(ref int) (*account.Account, error) {
 	for _, a := range *at.accounts {
-		if (*a).GetRef() == ref {
+		if a == nil {
+			continue
+		}
+		if a.GetRef() == ref {
 			return a, nil
 		}
 	}
@@ -92,8 +95,14 @@ func (at *AccountType) GetAccountByRef(ref int) (*account.Account, error) {
 }
 
 func (at *AccountType) GetAccountByName(name string) (*account.Account, error) {
+	if at.accounts == nil {
+		return nil, errors.New("Nil pointer dereference")
+	}
 	for _, a := range *at.accounts {
-		if (*a).GetName() == name {
+		if a == nil {
+			continue
+		}
+		if a.GetName() == name {
 			return a, nil
 		}
 	}

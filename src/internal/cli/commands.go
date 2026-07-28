@@ -210,7 +210,9 @@ func runViewTypes(db *sql.DB, ledger *ledger.Ledger, args []string) (string, err
 	switch len(args) {
 	case  0:		
 		accounts, err := database.GetAccounts(db)
-		fmt.Println(len(*accounts))
+		if accounts == nil {
+			return "", errors.New("no accounts available")
+		}
 		if err != nil {
 			return "", err
 		}
@@ -237,13 +239,15 @@ func runViewTypes(db *sql.DB, ledger *ledger.Ledger, args []string) (string, err
 			}
 			accountType, err := ledger.GetChart().GetAccountTypeByRefPrefix(refPrefix)
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 			accounts, err := database.GetTypeAccounts(db, accountType.GetId())
 			if err != nil {
 				return "", err
 			}
-			err = ledger.SetAccounts(accounts)
+			if err = ledger.SetAccounts(accounts); err != nil {
+				return "", err
+			}
 			output, err := ledger.ViewAccountType(refPrefix)
 			if err != nil {
 				return "", err
@@ -421,7 +425,7 @@ func runNewEntry(db *sql.DB, ledger *ledger.Ledger, args []string) (string, erro
 
 	newEntry, err := ledger.CreateJournalEntry(date, debitAccountRef, creditAccountRef, amountF64, explanation)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	err = database.AddEntry(db, newEntry)

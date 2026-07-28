@@ -56,6 +56,9 @@ func (j *Journal) SetEntries(entries *[]*entry.Entry) error {
 	}
 	clear(*j.entries)
 	for _, e := range *entries {
+		if e == nil {
+			continue
+		}
 		(*j.entries)[e.GetId()] = e
 	}
 	return nil
@@ -100,12 +103,15 @@ func (j Journal) String() string {
 	output.WriteString(strings.Repeat("─", 12 + 1))
 	output.WriteString("\n")
 
-	if len(*j.entries) == 0 {
+	if j.entries == nil || len(*j.entries) == 0 {
 		output.WriteString(strings.Repeat(" ", 1 + 19 + 3))
 		output.WriteString("*No entires\n")
 	} else {
 		entries := j.GetEntries()
 		for _, e := range *entries {
+			if e == nil || e.GetDebitAccount() == nil || e.GetCreditAccount() == nil {
+				continue
+			}
 			output.WriteString(" ")
 			output.WriteString(fmt.Sprintf("%-*s", 19, e.GetDate().Format(time.DateTime)))
 			output.WriteString(" │ ")

@@ -35,10 +35,19 @@ func InputAccountName() (string, error) {
 }
 
 func InputAccountTypeRefPrefix(ledger *ledger.Ledger) (int, error) {
+	if ledger == nil {
+		return 0, errors.New("ledger is nil")
+	}
 	accountTypes := ledger.GetAccountTypes()
+	if accountTypes == nil {
+		return 0, errors.New("no account types available")
+	}
 	options := make([]int, 0)
 	fmt.Println("Choose the account type:")
 	for _, at := range *accountTypes {
+		if at == nil {
+			continue
+		}
 		options = append(options, at.GetRefPrefix())
 		fmt.Printf("%d. %s\n", at.GetRefPrefix(), at.GetName())
 	}
@@ -86,7 +95,13 @@ func InputDate(dateField string) (time.Time, error) {
 }
 
 func InputAccountRef(ledger *ledger.Ledger, side string) (int, error) {
+	if ledger == nil {
+		return 0, errors.New("ledger is nil")
+	}
 	accounts := ledger.GetAccounts()
+	if accounts == nil {
+		return 0, errors.New("no accounts available")
+	}
 	width := 1 + 3 + 3 + account.MaxNameLength + 3 + 9 + 1
 	var menu strings.Builder
 	menu.WriteString(" Ref   Accounts\n")
@@ -99,6 +114,9 @@ func InputAccountRef(ledger *ledger.Ledger, side string) (int, error) {
 	menu.WriteString("\n")
 	var refs []int
 	for _, account := range *accounts {
+		if account == nil {
+			continue
+		}
 		refs = append(refs, account.GetRef())
 		menu.WriteString(account.String())
 		menu.WriteString("\n")

@@ -153,10 +153,22 @@ func (l *Ledger) String() string {
 	output += strings.Repeat(" ", paddingTitleLeft)
 	output += fmt.Sprintf("%s\n", l.name)
 	output += strings.Repeat("─", widthTitle)
+	if l.chart == nil {
+		return ""
+	}
 	for _, at := range *l.chart.GetAccountTypes() {
+		if at == nil {
+			continue
+		}
 		accounts := at.GetAccounts()
+		if accounts == nil {
+			continue
+		}
 		if len(*accounts) > 0 {
 			for _, a := range *at.GetAccounts() {
+				if a == nil {
+					continue
+				}
 				output += fmt.Sprintf("%-*s", paddingSubTitleLeft, a.GetName())
 				output += fmt.Sprintf("%*d", widthTitle - widthSubTitle, a.GetRef())
 				output += "\n"
@@ -188,6 +200,9 @@ func (l *Ledger) String() string {
 				output += "─"				
 				output += "\n"
 				entries := a.GetEntries()
+				if entries == nil {
+					return ""
+				}
 				if len(*entries) == 0 {
 					output += strings.Repeat(" ", 1 + 19 + 3)
 					output += "*No entries posted"
@@ -195,6 +210,9 @@ func (l *Ledger) String() string {
 				}
 				if len(*entries) > 0 {
 					for _, e := range *entries{
+						if e == nil {
+							continue
+						}
 						output += fmt.Sprintf("%-*s", 1 + 19, e.GetDate().Format(time.DateTime))
 						output += " │ "
 						output += fmt.Sprintf("%*d", 12, e.GetAmount())
