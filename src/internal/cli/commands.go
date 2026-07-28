@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"go.mod/database"
+	"go.mod/internal/database"
 	"go.mod/internal/entry"
 	"go.mod/internal/ledger"
 	"go.mod/internal/ui"
@@ -31,7 +31,7 @@ func Run() (string, error) {
 
 	var err error
 	var db *sql.DB
-	db, err = sql.Open("sqlite", "./database/ledger.db")
+	db, err = sql.Open("sqlite", ".internal/database/ledger.db")
 	if err != nil {
 		return "", err
 	}
