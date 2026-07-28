@@ -30,6 +30,9 @@ func (j *Journal) GetName() string {
 
 func (j *Journal) GetEntries() *[]*entry.Entry {
 	entries := make([]*entry.Entry, 0)
+	if j.entries == nil {
+		return &entries
+	}
 	for _, entry := range *j.entries {
 		entries = append(entries, entry)
 	}
