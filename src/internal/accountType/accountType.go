@@ -181,15 +181,6 @@ func GetDefaultAccountTypes() map[id.Id]*AccountType {
 	}
 
 	atId = id.GenerateNewId()
-	accounts5 := make(map[id.Id]*account.Account)
-	accountTypes[atId] = &AccountType{
-		id: atId,
-		name: "Dividends",
-		refPrefix: 5,
-		accounts: &accounts5,
-	}
-
-	atId = id.GenerateNewId()
 	accounts9 := make(map[id.Id]*account.Account)
 	accountTypes[atId] = &AccountType{
 		id: atId,

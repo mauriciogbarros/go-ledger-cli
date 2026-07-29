@@ -213,14 +213,14 @@ type Transaction struct {
 
 ### Views
 #### General Journal (Journal)
-- [ ] As a user, I want to view all journal entries
+- [x] As a user, I want to view all journal entries
 - [ ] As a user, I want to view all journal entries between two dates
 - [ ] As a user, I want to view all posted entries
 - [ ] As a user, I want to view all not-posted entries
 - [ ] As a user, I want to view an entry details
 
 #### Chart of Accounts (Chart)
-- [ ] As a user, I want to view the "Chart of Accounts"
+- [x] As a user, I want to view the "Chart of Accounts"
 - [x] As a user, I want to view the details for an account type
 - [x] As a user, I want to view the details for an account
 
@@ -231,7 +231,7 @@ type Transaction struct {
 - [ ] As a user, I want to view the "Trial Balance"
 
 ### Create
-- [ ] As a user, I want to create a new entry in the journal
+- [x] As a user, I want to create a new entry in the journal
 - [x] As a user, I want to create a new account
 
 ### Update
