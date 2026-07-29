@@ -47,7 +47,7 @@ func NewDbAccountEntry(
 		return nil, err
 	}
 
-	date, err := time.Parse(time.DateTime, sDate)
+	date, err := time.Parse(time.DateOnly, sDate)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (ae *AccountEntry) String() string {
 	output += strings.Repeat("─", 36)
 	output += "\n"
 	output += fmt.Sprintf("          Id │ %s\n", ae.id.String())
-	output += fmt.Sprintf("        Date │ %s\n", ae.date.Format(time.DateTime))
+	output += fmt.Sprintf("        Date │ %s\n", ae.date.Format(time.DateOnly))
 	output += fmt.Sprintf(" Explanation │ %s\n", ae.explanation)
 	output += "        Side │ "
 	if ae.side {

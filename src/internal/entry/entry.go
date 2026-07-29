@@ -11,8 +11,6 @@ import (
 	"go.mod/internal/id"
 )
 
-var MaxExplanationLength = 36
-
 type Entry struct {
 	id id.Id
 	date time.Time
@@ -55,7 +53,7 @@ func NewDbEntry(
 		return nil, err
 	}
 
-	date, err := time.Parse(time.DateTime, sDate)
+	date, err := time.Parse(time.DateOnly, sDate)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +137,7 @@ func (e *Entry) String() string {
 	output += strings.Repeat("─", 36)
 	output += "\n"
 	output += fmt.Sprintf("          Id │ %s\n", e.id.String())	
-	output += fmt.Sprintf("        Date │ %s\n", e.date.Format(time.DateTime))
+	output += fmt.Sprintf("        Date │ %s\n", e.date.Format(time.DateOnly))
 	output += fmt.Sprintf("      Amount │ %s\n", e.amount.String())
 	output += fmt.Sprintf("       Debit │ %s", e.debitAccount.GetName())
 	if e.isPosted {

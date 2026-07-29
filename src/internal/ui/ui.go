@@ -77,10 +77,23 @@ func InputAccountTypeRefPrefix(ledger *ledger.Ledger) (int, error) {
 	return choice, nil
 }
 
+func InputAmountF64() (float64, error) {
+	fmt.Print("Amount: ")
+	amountString, err := reader.ReadString('\n')
+	if err != nil {
+		return 0, err
+	}
+	amountString = strings.TrimSpace(amountString)
+	amountString = strings.ReplaceAll(amountString, ",", "")
+	amountF64, err := strconv.ParseFloat(amountString, 64)
+	if err != nil {
+		return 0, err
+	}
+	return amountF64, nil
+}
+
 func InputDate(dateField string) (time.Time, error) {
-	var err error
-	var date time.Time
-	fmt.Printf("%s date (YYYY-MM-DD HH:MM:SS): ", dateField)
+	fmt.Printf("%s date (YYYY-MM-DD): ", dateField)
 	dateString, err := reader.ReadString('\n')
 	if err != nil {
 		return time.Time{}, err
@@ -89,13 +102,24 @@ func InputDate(dateField string) (time.Time, error) {
 	if len(dateString) == 0 {
 		return time.Time{}, nil
 	}
-	if len(dateString) == len(time.DateOnly) {
-		date, err = time.Parse(time.DateOnly, dateString)
-	} else {
-		date, err = time.Parse(time.DateTime, dateString)
+	parts := strings.Split(dateString, "-")
+	if len(parts) != 3 {
+		return time.Time{}, fmt.Errorf("invalid date format, use YYYY-MM-DD")
 	}
+	layout := "2006-"
+	if len(parts[1]) == 1 {
+		layout += "1-"
+	} else {
+		layout += "01-"
+	}
+	if len(parts[2]) == 1 {
+		layout += "2"
+	} else {
+		layout += "02"
+	}
+	date, err := time.Parse(layout, dateString)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid date format, use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS")
+		return time.Time{}, fmt.Errorf("invalid date format, use YYYY-MM-DD")
 	}
 	return date, nil
 }

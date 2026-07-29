@@ -120,7 +120,11 @@ func runViewLedger(db *sql.DB, ledger *ledger.Ledger, args []string) (string, er
 			return "", err
 		}
 		ledger.SetJournalEntries(entries)
-		fmt.Println(ledger)
+		output, err := ledger.String()
+		if err != nil {
+			return "", err
+		}
+		fmt.Println(output)
 	
 	case 1:
 		switch args[0] {
@@ -499,10 +503,25 @@ func runNewAccount(db *sql.DB, ledger *ledger.Ledger, args []string) (string, er
 }
 
 func runNewEntry(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
+	var amountF64 float64
+	var err error
 	fmt.Println("New Journal Entry")
 	fmt.Println("─────────────────")
-	if len(args) != 1 {
-		return "Usage: ledger new-entry <amount>", nil
+	switch len(args) {
+	case 0:
+		amountF64, err = ui.InputAmountF64()
+		if err != nil {
+			return "", err
+		}
+
+	case 1:
+		amountF64, err = strconv.ParseFloat(args[0], 64)
+		if err != nil {
+			return "", err
+		}
+
+	default:
+		return "", errors.New("Usage: ledger new-entry <amount")
 	}
 
 	date, err := ui.InputDate("Entry")
@@ -510,18 +529,25 @@ func runNewEntry(db *sql.DB, ledger *ledger.Ledger, args []string) (string, erro
 		return "", err
 	}
 
-	amountF64, err := strconv.ParseFloat(args[0], 64)
+	accounts, err := database.GetAccounts(db)
+	if err != nil {
+		return "", err
+	}
+	
+	err = ledger.SetAccounts(accounts)
 	if err != nil {
 		return "", err
 	}
 
 	fmt.Println("Debit account")
+	fmt.Println("─────────────")
 	debitAccountRef, err := ui.InputAccountRef(ledger)
 	if err != nil {
 		return "", err
 	}
 
 	fmt.Println("Credit account")
+	fmt.Println("──────────────")
 	creditAccountRef, err := ui.InputAccountRef(ledger)
 	if err != nil {
 		return "", err
@@ -541,7 +567,7 @@ func runNewEntry(db *sql.DB, ledger *ledger.Ledger, args []string) (string, erro
 		return "", err
 	}
 
-	err = database.AddEntry(db, newEntry)
+	err = database.AddEntry(db, &newEntry)
 	if err != nil {
 		return "", err
 	}

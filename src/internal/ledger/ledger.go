@@ -1,6 +1,7 @@
 package ledger
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -145,80 +146,79 @@ func (l *Ledger) ViewTrialBalance() string {
 	return output
 }
 
-func (l *Ledger) String() string {
-	var widthTitle int = 1 + 19 + 3 + 30 + 3 + 12 + 3 + 12 + 3 + 12 + 1
+func (l *Ledger) String() (string, error) {
+	var widthTitle int = 1 + 10 + 3 + 30 + 3 + 12 + 3 + 12 + 3 + 12 + 1
 	var paddingTitleLeft int = (widthTitle - len(l.name)) / 2
-	var widthSubTitle int = 1 + 19 + 3 + 12 + 3 + 12 + 1
+	var widthSubTitle int = 1 + 10 + 3 + 12 + 3 + 12 + 1
 	var paddingSubTitleLeft int = (widthSubTitle - 30 / 2)
-	var output string
-	output += strings.Repeat(" ", paddingTitleLeft)
-	output += fmt.Sprintf("%s\n", l.name)
-	output += strings.Repeat("─", widthTitle)
+	var output strings.Builder
+	output.WriteString(strings.Repeat(" ", paddingTitleLeft))
+	fmt.Fprintf(&output, "%s\n", l.name)
+	output.WriteString(strings.Repeat("─", widthTitle))
 	if l.chart == nil {
-		return ""
+		return "", errors.New("Chart - nil pointer dereference")
 	}
 	for _, at := range *l.chart.GetAccountTypes() {
 		if at == nil {
-			continue
+			return "", errors.New("Account Types - nil pointer dereference")
 		}
 		accounts := at.GetAccounts()
 		if accounts == nil {
-			continue
+			return "", errors.New("Accounts - nil pointer dereference")
 		}
 		if len(*accounts) > 0 {
 			for _, a := range *at.GetAccounts() {
 				if a == nil {
-					continue
+					return "", errors.New("Account - nil pointer dereference")
 				}
-				output += fmt.Sprintf("%-*s", paddingSubTitleLeft, a.GetName())
-				output += fmt.Sprintf("%*d", widthTitle - widthSubTitle, a.GetRef())
-				output += "\n"
-				output += strings.Repeat("─", 1 + 19)
-				output += "─┬─"
-				output += strings.Repeat("─", 12)
-				output += "─┬─"				
-				output += strings.Repeat("─", 12)				
-				output += "─┬─"				
-				output += strings.Repeat("─", 12)				
-				output += "─"				
-				output += "\n"
-				output += " "
-				output += fmt.Sprintf("%-*s", 19, "Date")
-				output += " │ "
-				output += fmt.Sprintf("%*s", 12, "Debit")
-				output += " │ "
-				output += fmt.Sprintf("%*s", 12, "Credit")
-				output += " │ "
-				output += fmt.Sprintf("%*s", 12, "Balance")
-				output += "\n"
-				output += strings.Repeat("─", 1 + 19)
-				output += "─┼─"
-				output += strings.Repeat("─", 12)
-				output += "─┼─"
-				output += strings.Repeat("─", 12)				
-				output += "─┼─"
-				output += strings.Repeat("─", 12)				
-				output += "─"				
-				output += "\n"
+				fmt.Fprintf(&output, "%-*s", paddingSubTitleLeft, a.GetName())
+				fmt.Fprintf(&output, "%*d", widthTitle - widthSubTitle, a.GetRef())
+				output.WriteString("\n")
+				output.WriteString(strings.Repeat("─", 1 + 10))
+				output.WriteString("─┬─")
+				output.WriteString(strings.Repeat("─", 12))
+				output.WriteString("─┬─")
+				output.WriteString(strings.Repeat("─", 12))
+				output.WriteString("─┬─")
+				output.WriteString(strings.Repeat("─", 12))
+				output.WriteString("─")
+				output.WriteString("\n")
+				fmt.Fprintf(&output, "%-*s", 10, "Date")
+				output.WriteString(" │ ")
+				fmt.Fprintf(&output, "%*s", 12, "Debit")
+				output.WriteString(" │ ")
+				fmt.Fprintf(&output, "%*s", 12, "Credit")
+				output.WriteString(" │ ")
+				fmt.Fprintf(&output, "%*s", 12, "Balance")
+				output.WriteString("\n")
+				output.WriteString(strings.Repeat("─", 1 + 10))
+				output.WriteString("─┼─")
+				output.WriteString(strings.Repeat("─", 12))
+				output.WriteString("─┼─")
+				output.WriteString(strings.Repeat("─", 12))
+				output.WriteString("─┼─")
+				output.WriteString(strings.Repeat("─", 12))
+				output.WriteString("─")
+				output.WriteString("\n")
 				entries := a.GetEntries()
 				if entries == nil || len(*entries) == 0 {
-					output += strings.Repeat(" ", 1 + 19 + 3)
-					output += "*No entries posted"
-					output += "\n"
+					output.WriteString(strings.Repeat(" ", 1 + 10 + 3))
+					output.WriteString("*No entries posted")
+					output.WriteString("\n")
 				}
 				if len(*entries) > 0 {
 					for _, e := range *entries{
 						if e == nil {
-							continue
+							return "", errors.New("Entries - nil pointer dereference")
 						}
-						output += fmt.Sprintf("%-*s", 1 + 19, e.GetDate().Format(time.DateTime))
-						output += " │ "
-						output += fmt.Sprintf("%*d", 12, e.GetAmount())
+						fmt.Fprintf(&output, "%-*s", 1 + 10, e.GetDate().Format(time.DateOnly))
+						output.WriteString(" │ ")
+						fmt.Fprintf(&output, "%*d", 12, e.GetAmount())
 					}
 				}
 			}
 		}
 	}
 
-	return output
+	return output.String(), nil
 }

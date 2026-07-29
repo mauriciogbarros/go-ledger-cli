@@ -217,7 +217,7 @@ func (c *Chart) ViewAccountTypes() string {
 	output.WriteString(strings.Repeat("─", 8 + 1))
 	output.WriteString("\n")
 	output.WriteString(" Ref Prefix │ ")
-	output.WriteString(fmt.Sprintf("%-*s", accountType.MaxNameLength, "Name"))
+	fmt.Fprintf(&output, "%-*s", accountType.MaxNameLength, "Name")
 	output.WriteString(" │ Accounts\n")
 	output.WriteString(strings.Repeat("─", 1 + 10))
 	output.WriteString("─┼─")
@@ -226,11 +226,11 @@ func (c *Chart) ViewAccountTypes() string {
 	output.WriteString(strings.Repeat("─", 8 + 1))
 	output.WriteString("\n")
 	for _, at := range *c.GetAccountTypes() {
-		output.WriteString(fmt.Sprintf(" %*d", 10, at.GetRefPrefix()))
+		fmt.Fprintf(&output, " %*d", 10, at.GetRefPrefix())
 		output.WriteString(" │ ")
-		output.WriteString(fmt.Sprintf("%-*s", accountType.MaxNameLength, at.GetName()))
+		fmt.Fprintf(&output, "%-*s", accountType.MaxNameLength, at.GetName())
 		output.WriteString(" │ ")
-		output.WriteString(fmt.Sprintf("%*d", 8, len(*at.GetAccountsMap())))
+		fmt.Fprintf(&output, "%*d", 8, len(*at.GetAccountsMap()))
 		output.WriteString("\n")
 	}
 

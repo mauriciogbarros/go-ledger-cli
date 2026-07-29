@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"go.mod/internal/account"
 	"go.mod/internal/entry"
 	"go.mod/internal/id"
 )
@@ -71,15 +72,15 @@ func (j *Journal) SetEntries(entries *[]*entry.Entry) error {
 }
 
 func (j Journal) String() string {
-	var width int = 1 + 19 + 3 + 34 + 3 + 4 + 3 + 12 + 3 + 12 + 1
+	var width int = 1 + 10 + 3 + account.MaxNameLength + 4 + 3 + 4 + 3 + 12 + 3 + 12 + 1
 	var paddingLeft = (width - len(j.name))/2
 	var output strings.Builder
 	output.WriteString(strings.Repeat(" ", paddingLeft))
 	output.WriteString(j.name)
 	output.WriteString("\n")
-	output.WriteString(strings.Repeat("─", 1 + 19))
+	output.WriteString(strings.Repeat("─", 1 + 10))
 	output.WriteString("─┬─")
-	output.WriteString(strings.Repeat("─", 34))
+	output.WriteString(strings.Repeat("─", account.MaxNameLength + 4))
 	output.WriteString("─┬─")
 	output.WriteString(strings.Repeat("─", 4))
 	output.WriteString("─┬─")
@@ -88,19 +89,19 @@ func (j Journal) String() string {
 	output.WriteString(strings.Repeat("─", 12 + 1))
 	output.WriteString("\n")
 	output.WriteString(" ")
-	output.WriteString(fmt.Sprintf("%-*s", 19, "Date"))
+	fmt.Fprintf(&output, "%-*s", 10, "Date")
 	output.WriteString(" │ ")
-	output.WriteString(fmt.Sprintf("%-*s", 34, "Accounts & Explanation"))
+	fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 4, "Accounts & Explanation")
 	output.WriteString(" │ ")
 	output.WriteString("Ref ")
 	output.WriteString(" │ ")
-	output.WriteString(fmt.Sprintf("%*s", 12, "Debit"))
+	fmt.Fprintf(&output, "%*s", 12, "Debit")
 	output.WriteString(" │ ")
-	output.WriteString(fmt.Sprintf("%*s", 12, "Credit"))
+	fmt.Fprintf(&output, "%*s", 12, "Credit")
 	output.WriteString("\n")
-	output.WriteString(strings.Repeat("─", 1 + 19))
+	output.WriteString(strings.Repeat("─", 1 + 10))
 	output.WriteString("─┼─")
-	output.WriteString(strings.Repeat("─", 34))
+	output.WriteString(strings.Repeat("─", account.MaxNameLength + 4))
 	output.WriteString("─┼─")
 	output.WriteString(strings.Repeat("─", 4))
 	output.WriteString("─┼─")
@@ -110,7 +111,7 @@ func (j Journal) String() string {
 	output.WriteString("\n")
 
 	if j.entries == nil || len(*j.entries) == 0 {
-		output.WriteString(strings.Repeat(" ", 1 + 19 + 3))
+		output.WriteString(strings.Repeat(" ", 1 + 10 + 3))
 		output.WriteString("*No entires\n")
 	} else {
 		entries := j.GetEntries()
@@ -119,44 +120,61 @@ func (j Journal) String() string {
 				continue
 			}
 			output.WriteString(" ")
-			output.WriteString(fmt.Sprintf("%-*s", 19, e.GetDate().Format(time.DateTime)))
+			fmt.Fprintf(&output, "%-*s", 10, e.GetDate().Format(time.DateOnly))
 			output.WriteString(" │ ")
-			output.WriteString(fmt.Sprintf("%-*s", 38 + 2, e.GetDebitAccount().GetName()))
+			fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 4, e.GetDebitAccount().GetName())
 			output.WriteString(" │ ")
 			if e.IsPosted() {
-				output.WriteString(fmt.Sprintf("%*d", 4, e.GetDebitAccount().GetRef()))
+				fmt.Fprintf(&output, "%*d", 4, e.GetDebitAccount().GetRef())
 			} else {
 				output.WriteString(strings.Repeat(" ", 4))
 			}
 			output.WriteString(" │ ")
-			output.WriteString(fmt.Sprintf("%*d", 12, e.GetAmount()))
+			fmt.Fprintf(&output, "%*s", 12, e.GetAmount().String())
 			output.WriteString(" │\n")
 			output.WriteString(" ")
-			output.WriteString(strings.Repeat(" ", 19))
+			output.WriteString(strings.Repeat(" ", 10))
 			output.WriteString(" │   ")
-			output.WriteString(fmt.Sprintf("%-*s", 38, e.GetCreditAccount().GetName()))
+			fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 2, e.GetCreditAccount().GetName())
 			output.WriteString(" │ ")
 			if e.IsPosted() {
-				output.WriteString(fmt.Sprintf("%*d", 4, e.GetCreditAccount().GetRef()))
+				fmt.Fprintf(&output, "%*d", 4, e.GetCreditAccount().GetRef())
 			} else {
 				output.WriteString(strings.Repeat(" ", 4))
 			}
 			output.WriteString(" │ ")
 			output.WriteString(strings.Repeat(" ", 12))
 			output.WriteString(" │ ")
-			output.WriteString(fmt.Sprintf("%*s", 12, e.GetAmount().String()))
+			fmt.Fprintf(&output,"%*s", 12, e.GetAmount().String())
 			output.WriteString("\n")
-			output.WriteString(" ")
-			output.WriteString(strings.Repeat(" ", 19))
-			output.WriteString(" │     ")
-			output.WriteString(fmt.Sprintf("%-*s", 36, e.GetExplanation()))
-			output.WriteString(" │ ")
-			output.WriteString(strings.Repeat(" ", 4))
-			output.WriteString(" │ ")
-			output.WriteString(strings.Repeat(" ", 12))
-			output.WriteString(" │ ")
-			output.WriteString(strings.Repeat(" ", 12))
-			output.WriteString("\n")
+			words := strings.Split(e.GetExplanation(), " ")
+			var explanation strings.Builder
+			for i := 0; i < len(words); {
+				for exLen := 0; exLen <= account.MaxNameLength && i < len(words); {
+					explanation.WriteString(words[i])
+					explanation.WriteString(" ")
+					if i < len(words) {
+						i++
+					}
+					if i < len(words) {
+						exLen = explanation.Len() + len(words[i])
+					}
+				}
+
+				output.WriteString(" ")
+				output.WriteString(strings.Repeat(" ", 10))
+				output.WriteString(" │     ")
+				fmt.Fprintf(&output, "%-*s", account.MaxNameLength, &explanation)
+				output.WriteString(" │ ")
+				output.WriteString(strings.Repeat(" ", 4))
+				output.WriteString(" │ ")
+				output.WriteString(strings.Repeat(" ", 12))
+				output.WriteString(" │ ")
+				output.WriteString(strings.Repeat(" ", 12))
+				output.WriteString("\n")
+
+				explanation.Reset()
+			}
 		}
 	}
 	output.WriteString("\n")
