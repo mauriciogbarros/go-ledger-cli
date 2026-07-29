@@ -228,6 +228,8 @@ func runViewTypes(db *sql.DB, ledger *ledger.Ledger, args []string) (string, err
 		fmt.Println(ledger.ViewAccountTypes())
 
 	case 1:
+		fmt.Println("View Account Type")
+		fmt.Println("─────────────────")
 		switch args[0] {
 		case "help":
 			var msg strings.Builder
@@ -264,6 +266,8 @@ func runViewTypes(db *sql.DB, ledger *ledger.Ledger, args []string) (string, err
 		}
 		
 	default:
+		fmt.Println("View Account Type")
+		fmt.Println("─────────────────")
 		return "", errors.New("Usage: ledger view-types [arg]")
 	}
 	
@@ -291,15 +295,18 @@ func runViewAccounts(db *sql.DB, ledger *ledger.Ledger, args []string) (string, 
 		fmt.Println(output)
 
 	case 1:
-		if args[0] == "help" {
+		fmt.Println("View Accounts")
+		fmt.Println("─────────────")
+		switch args[0] {
+		case "hellp":
 			var msg strings.Builder
-			msg.WriteString("View accounts\n")
 			msg.WriteString("Argument options:\n")
 			msg.WriteString("- <empty> - show a listing of all accounts\n")
 			msg.WriteString("- help    - show this help\n")
 			msg.WriteString("- ref     - show the information of an account\n")
 			fmt.Println(msg.String())
-		} else {
+
+		case "ref":
 			accounts, err := database.GetAccounts(db)
 			if err != nil {
 				return "", nil
@@ -310,7 +317,6 @@ func runViewAccounts(db *sql.DB, ledger *ledger.Ledger, args []string) (string, 
 				return "", nil
 			}
 
-			fmt.Println("Choose account")
 			ref, err := ui.InputAccountRef(ledger)
 			if err != nil {
 				return "", nil
@@ -322,7 +328,13 @@ func runViewAccounts(db *sql.DB, ledger *ledger.Ledger, args []string) (string, 
 			}
 			
 			fmt.Println(output)
+		
+		default:
+			fmt.Println("View Accounts")
+			fmt.Println("─────────────")
+			return "", errors.New("Invalid argument")
 		}
+
 	default:
 		return "", errors.New("Usage: ledger view-account [arg]")
 	}
@@ -358,7 +370,8 @@ func runViewJournal(db *sql.DB, ledger *ledger.Ledger, args []string) (string, e
 		switch args[0] {
 		case "help":
 			var msg strings.Builder
-			msg.WriteString("View journal:\n")
+			msg.WriteString("View Journal\n")
+			msg.WriteString("────────────")
 			msg.WriteString("Argument options:\n")
 			msg.WriteString("- <empty>    - Show all entries\n")
 			msg.WriteString("- help       - Show this help\n")
@@ -426,6 +439,8 @@ func runNewAccount(db *sql.DB, ledger *ledger.Ledger, args []string) (string, er
 		return "", err
 	}
 
+	fmt.Println("Create New Account")
+	fmt.Println("──────────────────")
 	switch len(args) {
 	case 0:
 		name, err = ui.InputAccountName()
@@ -484,6 +499,8 @@ func runNewAccount(db *sql.DB, ledger *ledger.Ledger, args []string) (string, er
 }
 
 func runNewEntry(db *sql.DB, ledger *ledger.Ledger, args []string) (string, error) {
+	fmt.Println("New Journal Entry")
+	fmt.Println("─────────────────")
 	if len(args) != 1 {
 		return "Usage: ledger new-entry <amount>", nil
 	}

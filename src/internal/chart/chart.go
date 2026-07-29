@@ -75,7 +75,7 @@ func (c *Chart) GetAccountTypeByRefPrefix(refPrefix int) (*accountType.AccountTy
 }
 
 func (c *Chart) GetAccountByRef(ref int) (*account.Account, error) {
-	if ref < 1000 {
+	if ref < 1000 || ref > 9999 {
 		return nil, errors.New("Invalid ref")
 	}
 	refPrefix := ref / 1000
@@ -112,6 +112,9 @@ func (c *Chart) GetAccounts() *[]*account.Account {
 	for _, at := range *c.accountTypes {
 		accounts = append(accounts, *at.GetAccounts()...)
 	}
+	sort.Slice(accounts, func(i, j int) bool {
+		return accounts[i].GetRef() < accounts[j].GetRef()
+	})
 
 	return &accounts
 }
