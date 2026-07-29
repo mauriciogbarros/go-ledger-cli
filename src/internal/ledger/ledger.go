@@ -110,21 +110,21 @@ func (l *Ledger) CreateJournalEntry(date time.Time, debitAccountRef int, creditA
 	refPrefix = debitAccountRef / 1000
 	accountType, err = l.chart.GetAccountTypeByRefPrefix(refPrefix)
 	if err != nil {
-		return entry.Entry{}, nil
+		return entry.Entry{}, err
 	}
 	debitAccount, err := accountType.GetAccountByRef(debitAccountRef)
 	if err != nil {
-		return entry.Entry{}, nil
+		return entry.Entry{}, err
 	}
 
 	refPrefix = creditAccountRef / 1000
 	accountType, err = l.chart.GetAccountTypeByRefPrefix(refPrefix)
 	if err != nil {
-		return entry.Entry{}, nil
+		return entry.Entry{}, err
 	}
 	creditAccount, err := accountType.GetAccountByRef(creditAccountRef)
 	if err != nil {
-		return entry.Entry{}, nil
+		return entry.Entry{}, err
 	}
 
 	newEntry := entry.NewEntry(date, debitAccount, creditAccount, amount, explanation)
@@ -132,10 +132,11 @@ func (l *Ledger) CreateJournalEntry(date time.Time, debitAccountRef int, creditA
 	return *newEntry, nil
 }
 
-func (l *Ledger) ViewAccount(id id.Id) string {
-	var output string
-
-	return output
+func (l *Ledger) ViewAccounts() (string, error) {
+	return l.chart.ViewAccounts()
+}
+func (l *Ledger) ViewAccountByRef(ref int) (string, error) {
+	return l.chart.ViewAccountByRef(ref)
 }
 
 func (l *Ledger) ViewTrialBalance() string {

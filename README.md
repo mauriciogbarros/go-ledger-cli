@@ -221,8 +221,8 @@ type Transaction struct {
 
 #### Chart of Accounts (Chart)
 - [ ] As a user, I want to view the "Chart of Accounts"
-- [ ] As a user, I want to view the details for an account type
-- [ ] As a user, I want to view the details for an account
+- [x] As a user, I want to view the details for an account type
+- [x] As a user, I want to view the details for an account
 
 #### Ledger
 - [ ] As a user, I want to view the "General Ledger"
@@ -232,7 +232,7 @@ type Transaction struct {
 
 ### Create
 - [ ] As a user, I want to create a new entry in the journal
-- [ ] As a user, I want to create a new account
+- [x] As a user, I want to create a new account
 
 ### Update
 - [ ] As a user, I want to update certain details for an entry that is not-posted: date, debit account, credit account, amount, and explanation.

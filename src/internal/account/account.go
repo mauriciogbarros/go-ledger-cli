@@ -147,14 +147,16 @@ func (a *Account) CalculateBalance() {
 
 func (a *Account) String() string {
 	var output strings.Builder
-	output.WriteString("           Account Details\n")
-	output.WriteString(strings.Repeat("─", 8))
+	output.WriteString("               Account Information\n")
+	output.WriteString(strings.Repeat("─", 12))
 	output.WriteString("─┬─")
-	output.WriteString(strings.Repeat("─\n", 36))
+	output.WriteString(strings.Repeat("─", 36))
+	output.WriteString("\n")
 	fmt.Fprintf(&output, "          Id │ %s\n", a.id.String())
 	fmt.Fprintf(&output, "         Ref │ %d\n", a.ref)
 	fmt.Fprintf(&output, "        Name │ %s\n", a.name)
 	fmt.Fprintf(&output, " Description │ %s\n", a.description)
+//	fmt.Fprintf(&output, " Journal Entries | %s\n, ")
 	fmt.Fprintf(&output, "     Entries | %d\n", len(*a.entries))
 	fmt.Fprintf(&output, "     Balance │ %s\n", a.balance.String())
 	output.WriteString("\n")

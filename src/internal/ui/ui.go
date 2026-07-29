@@ -78,6 +78,8 @@ func InputAccountTypeRefPrefix(ledger *ledger.Ledger) (int, error) {
 }
 
 func InputDate(dateField string) (time.Time, error) {
+	var err error
+	var date time.Time
 	fmt.Printf("%s date (YYYY-MM-DD HH:MM:SS): ", dateField)
 	dateString, err := reader.ReadString('\n')
 	if err != nil {
@@ -87,14 +89,18 @@ func InputDate(dateField string) (time.Time, error) {
 	if len(dateString) == 0 {
 		return time.Time{}, nil
 	}
-	date, err := time.Parse(time.DateTime, dateString)
+	if len(dateString) == len(time.DateOnly) {
+		date, err = time.Parse(time.DateOnly, dateString)
+	} else {
+		date, err = time.Parse(time.DateTime, dateString)
+	}
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("invalid date format, use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS")
 	}
 	return date, nil
 }
 
-func InputAccountRef(ledger *ledger.Ledger, side string) (int, error) {
+func InputAccountRef(ledger *ledger.Ledger) (int, error) {
 	if ledger == nil {
 		return 0, errors.New("ledger is nil")
 	}
@@ -102,29 +108,30 @@ func InputAccountRef(ledger *ledger.Ledger, side string) (int, error) {
 	if accounts == nil {
 		return 0, errors.New("no accounts available")
 	}
-	width := 1 + 3 + 3 + account.MaxNameLength + 3 + 9 + 1
 	var menu strings.Builder
 	menu.WriteString(" Ref   Accounts\n")
 	menu.WriteString("─")
-	menu.WriteString(strings.Repeat("─", 3))
+	menu.WriteString(strings.Repeat("─", 1 + 3))
 	menu.WriteString("─┬─")
 	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
-	menu.WriteString("─┬─")
-	menu.WriteString(strings.Repeat("─", 9 + 1))
+	menu.WriteString("─")
 	menu.WriteString("\n")
 	var refs []int
 	for _, account := range *accounts {
 		if account == nil {
 			continue
 		}
-		refs = append(refs, account.GetRef())
-		menu.WriteString(account.String())
-		menu.WriteString("\n")
+		ref := account.GetRef()
+		refs = append(refs, ref)
+		fmt.Fprintf(&menu, " %d │ %s\n", ref, account.GetName())
 	}
-
-	menu.WriteString(strings.Repeat("─", width))
-	menu.WriteString("\n")
-	fmt.Fprintf(&menu, "Enter %s account Reef: ", side)
+	menu.WriteString("─")
+	menu.WriteString(strings.Repeat("─", 1 + 3))
+	menu.WriteString("─┴─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
+	menu.WriteString("─")
+	fmt.Println(menu.String())
+	fmt.Print("Enter ref: ")
 	input, err := reader.ReadString('\n')
 	fmt.Println()
 	if err != nil {
