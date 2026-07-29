@@ -529,5 +529,10 @@ func runNewEntry(db *sql.DB, ledger *ledger.Ledger, args []string) (string, erro
 		return "", err
 	}
 
-	return "Entry created: Dr = " + newEntry.GetDebitAccount().GetName() + "; Cr = " + newEntry.GetCreditAccount().GetName() + "; $" + newEntry.GetAmount().String(), nil
+	debitAccount := newEntry.GetDebitAccount()
+	creditAccount := newEntry.GetCreditAccount()
+	if debitAccount == nil || creditAccount == nil {
+		return "", errors.New("entry is missing debit or credit account")
+	}
+	return "Entry created: Dr = " + debitAccount.GetName() + "; Cr = " + creditAccount.GetName() + "; $" + newEntry.GetAmount().String(), nil
 }
