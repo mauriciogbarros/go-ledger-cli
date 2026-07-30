@@ -47,48 +47,54 @@ func GetAccountTypes(db *sql.DB) (*map[id.Id]*accountType.AccountType, error) {
 	
 	accountTypes := make(map[id.Id]*accountType.AccountType,0)
 	
-	if count > 0 {
-		rows, err := db.Query("SELECT id, name, ref_prefix FROM account_types")
+	if count == 0 {
+		var err error
+		accountTypes, err = seedDefaultAccountTypes(db)
 		if err != nil {
 			return nil, err
 		}
-		defer rows.Close()
-		
-		for rows.Next() {
-			var sId, name string
-			var refPrefix int
-			err := rows.Scan(&sId, &name, &refPrefix)
-			if err != nil {
-				return nil, err
-			}
-			accountType, err := accountType.NewDbAccountType(sId, name, refPrefix)
-			if err != nil {
-				return nil, err
-			}
-			accountTypes[accountType.GetId()] = accountType
-		}
-		if rows.Err() != nil {
-			return nil, rows.Err()
-		}
-	} else {
-		accountTypes = accountType.GetDefaultAccountTypes()
-		for _, at := range accountTypes {
-			stmt, err := db.Prepare("INSERT INTO account_types(id, name, ref_prefix) values(?, ?, ?)")
-			if err != nil {
-				return nil, err
-			}
+		return &accountTypes, nil
+	}
 
-			sId := at.GetId().String()
-			name := at.GetName()
-			refPrefix := at.GetRefPrefix()
-			_, err = stmt.Exec(sId, name, refPrefix)
-			if err != nil {
-				return nil, err
-			}
+	rows, err := db.Query("SELECT id, name, ref_prefix FROM account_types")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var sId, name string
+		var refPrefix int
+		if err := rows.Scan(&sId, &name, &refPrefix); err != nil {
+			return nil, err
 		}
+		at, err := accountType.NewDbAccountType(sId, name, refPrefix)
+		if err != nil {
+			return nil, err
+		}
+		accountTypes[at.GetId()] = at
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 
 	return &accountTypes, nil
+}
+
+func seedDefaultAccountTypes(db *sql.DB) (map[id.Id]*accountType.AccountType, error) {
+	accountTypes := accountType.GetDefaultAccountTypes()
+	stmt, err := db.Prepare("INSERT INTO account_types(id, name, ref_prefix) values(?, ?, ?)")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+	for _, at := range accountTypes {
+		_, err = stmt.Exec(at.GetId().String(), at.GetName(), at.GetRefPrefix())
+		if err != nil {
+			return nil, err
+		}
+	}
+	return accountTypes, nil
 }
 
 func GetAccounts(db *sql.DB) (*[]*account.Account, error) {

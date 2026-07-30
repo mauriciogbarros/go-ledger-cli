@@ -46,6 +46,9 @@ func (j *Journal) GetEntries() *[]*entry.Entry {
 }
 
 func (j *Journal) GetEntryById(id id.Id) (*entry.Entry, error) {
+	if j.entries == nil {
+		return nil, errors.New("Entries - nil pointer dereference")
+	}
 	entry, exist := (*j.entries)[id]
 	if !exist {
 		return nil, errors.New("Entry id not found.")
@@ -116,16 +119,18 @@ func (j Journal) String() string {
 	} else {
 		entries := j.GetEntries()
 		for _, e := range *entries {
-			if e == nil || e.GetDebitAccount() == nil || e.GetCreditAccount() == nil {
+			debitAccount := e.GetDebitAccount()
+			creditAccount := e.GetCreditAccount()
+			if e == nil || debitAccount == nil || creditAccount == nil {
 				continue
 			}
 			output.WriteString(" ")
 			fmt.Fprintf(&output, "%-*s", 10, e.GetDate().Format(time.DateOnly))
 			output.WriteString(" │ ")
-			fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 4, e.GetDebitAccount().GetName())
+			fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 4, debitAccount.GetName())
 			output.WriteString(" │ ")
 			if e.IsPosted() {
-				fmt.Fprintf(&output, "%*d", 4, e.GetDebitAccount().GetRef())
+				fmt.Fprintf(&output, "%*d", 4, debitAccount.GetRef())
 			} else {
 				output.WriteString(strings.Repeat(" ", 4))
 			}
@@ -135,10 +140,10 @@ func (j Journal) String() string {
 			output.WriteString(" ")
 			output.WriteString(strings.Repeat(" ", 10))
 			output.WriteString(" │   ")
-			fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 2, e.GetCreditAccount().GetName())
+			fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 2, creditAccount.GetName())
 			output.WriteString(" │ ")
 			if e.IsPosted() {
-				fmt.Fprintf(&output, "%*d", 4, e.GetCreditAccount().GetRef())
+				fmt.Fprintf(&output, "%*d", 4, creditAccount.GetRef())
 			} else {
 				output.WriteString(strings.Repeat(" ", 4))
 			}

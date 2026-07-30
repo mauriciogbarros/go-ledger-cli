@@ -109,6 +109,83 @@ src/
     ├── id/           # UUID wrapper
     └── ui/           # CLI input helpers
 ```
+### Entity Diagram
+
+```mermaid
+classDiagram
+	Entry *--> Account : debit
+	Entry *--> Account : credit
+	Journal *--> Entry : has many
+	Account *--> AccountEntry : has many
+	AccountType *--> Account : has many
+	Chart *--> AccountType : has many
+	Ledger *--> Chart : has one
+	Ledger *--> Journal : has one
+
+	class Ledger {
+		-name string
+		-chart *Chart
+		-journal *Journal
+		+CreateAccount()
+		+CreateJournalEntry()
+		+IsBalanced()
+		+ViewTrialBalance()
+	}
+
+	class Chart {
+		-name string
+		-accountTypes map~Id~AccountType
+		+CreateAccount()
+		+MapAccountsToTypes()
+	}
+
+	class AccountType {
+		-id Id
+		-name string
+		-refPrefix int
+		-accounts map~Id~Account
+		+AddAccount()
+	}
+
+	class Account {
+		-id Id
+		-ref int
+		-name string
+		-description string
+		-accountTypeId Id
+		-entries map~Id~AccountEntry
+		-balance Currency
+		+AddEntry()
+		+CalculateBalance()
+	}
+
+	class AccountEntry {
+		-id Id
+		-date Time
+		-explanation string
+		-amount Currency
+		-side bool
+		-balance Currency
+	}
+
+	class Journal {
+		-name string
+		-entries map~Id~Entry
+		+SetEntries()
+	}
+
+	class Entry {
+		-id Id
+		-date Time
+		-debitAccount *Account
+		-creditAccount *Account
+		-amount Currency
+		-explanation string
+		-isPosted bool
+		+UpdateEntry()
+		+Post()
+	}
+```
 
 ### Structure Goals
 - Separate domain logic from CLI handling
