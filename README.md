@@ -99,13 +99,15 @@ src/
 └── internal/
     ├── cli/          # Command parsing and dispatch
     ├── database/     # SQLite persistence layer
-    ├── ledger/       # Root aggregate, orchestrates chart + journal
+    ├── ledger/       # Root aggregate, orchestrates
+    │                 # chart + journal
     ├── chart/        # Chart of Accounts
     ├── accountType/  # Account type (Assets, Liabilities, etc.)
     ├── account/      # Account and AccountEntry
     ├── journal/      # General Journal
     ├── entry/        # Journal Entry
-    ├── currency/     # Currency type (int64 cents) with banker's rounding
+    ├── currency/     # Currency type (int64 cents) with
+    │                 # banker's rounding
     ├── id/           # UUID wrapper
     └── ui/           # CLI input helpers
 ```
