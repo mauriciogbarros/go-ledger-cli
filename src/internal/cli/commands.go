@@ -80,14 +80,14 @@ func Run() (string, error) {
 func runHelp() (string, error) {
 		fmt.Println("Available commands:")
 		fmt.Println("───────────────────")
-		fmt.Println("help               - Show this help")
-		fmt.Println("view-ledger [arg]  - View general ledger")
-		fmt.Println("view-chart [arg]   - View chart of accounts")
-		fmt.Println("view-types [arg]   - View account types information")
+		fmt.Println("help                - Show this help")
+		fmt.Println("view-ledger [arg]   - View general ledger")
+		fmt.Println("view-chart [arg]    - View chart of accounts")
+		fmt.Println("view-types [arg]    - View account types information")
 		fmt.Println("view-accounts [arg] - View account information")
-		fmt.Println("view-journal [arg] - View journal entries")
-		fmt.Println("new-account [arg]  - Add a new account to the chart")
-		fmt.Println("new-entry [arg]    - Add a new entry to the journal")
+		fmt.Println("view-journal [arg]  - View journal entries")
+		fmt.Println("new-account [arg]   - Add a new account to the chart")
+		fmt.Println("new-entry [arg]     - Add a new entry to the journal")
 		fmt.Println()
 
 		return "Ok", nil
@@ -375,13 +375,14 @@ func runViewJournal(db *sql.DB, ledger *ledger.Ledger, args []string) (string, e
 		case "help":
 			var msg strings.Builder
 			msg.WriteString("View Journal\n")
-			msg.WriteString("────────────")
+			msg.WriteString("────────────\n")
 			msg.WriteString("Argument options:\n")
 			msg.WriteString("- <empty>    - Show all entries\n")
 			msg.WriteString("- help       - Show this help\n")
 			msg.WriteString("- dates      - Show entries from date to date\n")
 			msg.WriteString("- posted     - Show all entries posted\n")
 			msg.WriteString("- not-posted - Show all entries not posted\n")
+			msg.WriteString("- entry      - Show an entry information\n")
 			fmt.Println(msg.String())
 
 		case "dates":
@@ -419,6 +420,23 @@ func runViewJournal(db *sql.DB, ledger *ledger.Ledger, args []string) (string, e
 			ledger.SetJournalEntries(entries)
 			fmt.Println(ledger.ViewJournal())
 
+		case "entry":
+			fromDate, toDate, err := ui.InputEntryYearMonth()
+			if err != nil {
+				return "", err
+			}
+			year := fromDate.Year()
+			month := int(fromDate.Month())
+			entries, err = database.GetEntriesBetweenDates(db, ledger, fromDate, toDate)
+			if err != nil {
+				return "", err
+			}
+			entry, err := ui.InputEntryChoice(entries, year, month)
+			if err != nil {
+				return "", err
+			}
+			fmt.Println(entry.String())
+			
 		default:
 			return "", errors.New("Invalid argument")
 		}

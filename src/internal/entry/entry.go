@@ -130,30 +130,59 @@ func (e *Entry) Post() error {
 }
 
 func (e *Entry) String() string {
-	var output string
-	output += "          Journal Entry Details\n"
-	output += strings.Repeat("─", 12)
-	output += "─┬─"
-	output += strings.Repeat("─", 36)
-	output += "\n"
-	output += fmt.Sprintf("          Id │ %s\n", e.id.String())	
-	output += fmt.Sprintf("        Date │ %s\n", e.date.Format(time.DateOnly))
-	output += fmt.Sprintf("      Amount │ %s\n", e.amount.String())
-	output += fmt.Sprintf("       Debit │ %s", e.debitAccount.GetName())
+	var output strings.Builder
+	output.WriteString(strings.Repeat(" ", 15))
+	output.WriteString("Journal Entry Details\n")
+	output.WriteString(strings.Repeat("─", 15))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", account.MaxNameLength))
+	output.WriteString("\n")
+	fmt.Fprintf(&output, "             Id │ %s\n", e.id.String())
+	fmt.Fprintf(&output, "           Date │ %s\n", e.date.Format(time.DateOnly))
+	fmt.Fprintf(&output, "         Amount │ %s\n", e.amount.String())
+	fmt.Fprintf(&output, "  Debit Account │ %s", e.debitAccount.GetName())
 	if e.isPosted {
-		output += fmt.Sprintf(" (%d)\n", e.debitAccount.GetRef())
+		fmt.Fprintf(&output, " (%d)\n", e.debitAccount.GetRef())
 	} else {
-		output += "\n"
+		output.WriteString("\n")
 	}
-	output += fmt.Sprintf("      Credit │ %s", e.creditAccount.GetName())
+	fmt.Fprintf(&output, " Credit Account │ %s", e.creditAccount.GetName())
 	if e.isPosted {
-		output += fmt.Sprintf(" (%d)\n", e.creditAccount.GetRef())
+		fmt.Fprintf(&output, " (%d)\n", e.creditAccount.GetRef())
 	} else {
-		output += "\n"
+		output.WriteString("\n")
 	}
-	output += fmt.Sprintf(" Explanation │ %s\n", e.explanation)
-	output += "\n"
 
-	return output
+	output.WriteString("    Explanation │ ")
+	words := strings.Split(e.GetExplanation(), " ")
+	var explanation strings.Builder
+	for i := 0; i < len(words); {
+		for exLen := 0; exLen <= account.MaxNameLength && i < len(words); {
+			explanation.WriteString(words[i])
+			if i < len(words) {
+				i++
+			}
+			if i < len(words) {
+				explanation.WriteString(" ")
+				exLen = explanation.Len() + len(words[i])
+			}
+		}
+		output.WriteString(explanation.String())
+		output.WriteString("\n")
+		if i < len(words) {
+			explanation.Reset()
+			output.WriteString(strings.Repeat(" ", 15))
+			output.WriteString(" │ ")
+		}
+	}
+	output.WriteString("         Posted │ ")
+	if e.isPosted {
+		output.WriteString("Yes\n")
+	} else {
+		output.WriteString("No\n")
+	}
+	output.WriteString("\n")
+
+	return output.String()
 }
 

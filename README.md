@@ -214,10 +214,10 @@ type Transaction struct {
 ### Views
 #### General Journal (Journal)
 - [x] As a user, I want to view all journal entries
-- [ ] As a user, I want to view all journal entries between two dates
-- [ ] As a user, I want to view all posted entries
-- [ ] As a user, I want to view all not-posted entries
-- [ ] As a user, I want to view an entry details
+- [x] As a user, I want to view all journal entries between two dates
+- [x] As a user, I want to view all posted entries
+- [x] As a user, I want to view all not-posted entries
+- [x] As a user, I want to view an entry details
 
 #### Chart of Accounts (Chart)
 - [x] As a user, I want to view the "Chart of Accounts"

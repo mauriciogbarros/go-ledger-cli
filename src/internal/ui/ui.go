@@ -12,6 +12,7 @@ import (
 
 	"go.mod/internal/account"
 	"go.mod/internal/accountType"
+	"go.mod/internal/entry"
 	"go.mod/internal/ledger"
 )
 
@@ -184,4 +185,137 @@ func InputText(fieldName string) (string, error) {
 		explanation = ""
 	}
 	return explanation, nil
+}
+
+func InputEntryYearMonth() (time.Time, time.Time, error) {
+
+	fmt.Print("Provide year and month (YYYY-MM): ")
+	yearMonthString, err := reader.ReadString('\n')
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	yearMonthString = strings.TrimSpace(yearMonthString)
+	yearMonthSplitString := strings.Split(yearMonthString, "-")
+	if len(yearMonthSplitString) != 2 {
+		return time.Time{}, time.Time{}, errors.New("Invalid year-month format, use YYYY-MM")
+	}
+	year, err := strconv.Atoi(yearMonthSplitString[0])
+	month, err := strconv.Atoi(yearMonthSplitString[1])
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	if year < 1900 {
+		return time.Time{}, time.Time{}, errors.New("Year must be greater than or equal to 1900")
+	}
+	if month < 1 || month > 12 {
+		return time.Time{}, time.Time{}, errors.New("Month must be between 1 and 12")
+	}
+	fromDate := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	toDate := time.Date(year, time.Month(month + 1), -1, 0, 0, 0, 0, time.UTC)
+
+	return fromDate, toDate, nil
+}
+
+func InputEntryChoice(entries *[]*entry.Entry, year int, month int) (*entry.Entry, error) {
+	if entries == nil {
+		return nil, errors.New("Entries - nil pointer dereference")
+	}
+	choices := make(map[int]*entry.Entry, 0)
+	width := 1 + 6 + 3 + 10 + 3 + account.MaxNameLength + 3 + account.MaxNameLength + 3 + account.MaxNameLength + 1
+	title := fmt.Sprintf("Entries for %d-%d", year, month)
+	var menu strings.Builder
+	menu.WriteString("\n")
+	menu.WriteString(strings.Repeat(" ", (width - len(title)) / 2))
+	menu.WriteString(title)
+	menu.WriteString("\n")
+	menu.WriteString(strings.Repeat("─", 1 + 6))
+	menu.WriteString("─┬─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
+	menu.WriteString("─┬─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
+	menu.WriteString("─┬─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength + 1))
+	menu.WriteString("\n")
+	menu.WriteString(" Option")
+	menu.WriteString(" │ ")
+	fmt.Fprintf(&menu, "%-*s", account.MaxNameLength, "Debit Account")
+	menu.WriteString(" │ ")
+	fmt.Fprintf(&menu, "%-*s", account.MaxNameLength, "Credit Account")
+	menu.WriteString(" │ ")
+	fmt.Fprintf(&menu, "%-*s", account.MaxNameLength, "Explanation")
+	menu.WriteString("\n")
+	menu.WriteString(strings.Repeat("─", 1 + 6))
+	menu.WriteString("─┼─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
+	menu.WriteString("─┼─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
+	menu.WriteString("─┼─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength + 1))
+	menu.WriteString("\n")
+
+	for c, e := range *entries {
+		if e == nil {
+			return nil, errors.New("Entry - nil pointer dereferencing")
+		}
+		choices[c + 1] = e
+		menu.WriteString(" ")
+		fmt.Fprintf(&menu, "%-*d", 6, c + 1)
+		menu.WriteString(" │ ")
+		fmt.Fprintf(&menu,"%-*s", account.MaxNameLength, e.GetDebitAccount().GetName())
+		menu.WriteString(" │ ")
+		fmt.Fprintf(&menu, "%-*s", account.MaxNameLength, e.GetCreditAccount().GetName())
+		menu.WriteString(" │ ")
+
+		words := strings.Split(e.GetExplanation(), " ")
+		var explanation strings.Builder
+		for i := 0; i < len(words); {
+			for exLen := 0; exLen <= account.MaxNameLength && i < len(words); {
+				explanation.WriteString(words[i])
+				if i < len(words) {
+					i++
+				}
+				if i < len(words) {
+					explanation.WriteString(" ")
+					exLen = explanation.Len() + len(words[i])
+				}
+			}
+			fmt.Fprintf(&menu, "%-*s\n", account.MaxNameLength, &explanation)
+			if i < len(words) {
+				explanation.Reset()
+				menu.WriteString(strings.Repeat(" ", 1 + 6))
+				menu.WriteString(" │ ")
+				menu.WriteString(strings.Repeat(" ", account.MaxNameLength))
+				menu.WriteString(" │ ")
+				menu.WriteString(strings.Repeat(" ", account.MaxNameLength))
+				menu.WriteString(" │ ")
+			}
+		}
+	}
+
+	menu.WriteString(strings.Repeat("─", 1 + 6))
+	menu.WriteString("─┴─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
+	menu.WriteString("─┴─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
+	menu.WriteString("─┴─")
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength + 1))
+	menu.WriteString("\n")
+	fmt.Print(menu.String())
+	fmt.Print("Choice: ")
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, err
+	}
+	input = strings.TrimSpace(input)
+	choice, err := strconv.Atoi(input)
+	if err != nil {
+		return nil, errors.New("Invalid input")
+	}
+
+	entry, exists := choices[choice]
+	if exists {
+		return entry, nil
+	} else {
+		return nil, errors.New("Invalid choice")
+	}
 }

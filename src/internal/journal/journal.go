@@ -147,6 +147,7 @@ func (j Journal) String() string {
 			output.WriteString(" │ ")
 			fmt.Fprintf(&output,"%*s", 12, e.GetAmount().String())
 			output.WriteString("\n")
+			
 			words := strings.Split(e.GetExplanation(), " ")
 			var explanation strings.Builder
 			for i := 0; i < len(words); {
