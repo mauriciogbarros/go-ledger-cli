@@ -30,23 +30,13 @@ A command-line application written in Go that simulates a **financial transactio
 
 ## Problem Statement
 
-Modern financial systems rely on accurate, consistent, and structured transaction processing. Even simple operations such as deposits, withdrawals, and transfers require:
-
-- Proper data modeling
-- Controlled state changes
-- Clear abstractions and separation of concerns
-
-This project addresses the problem of building a minimal but well-structured ledger system that:
-
-- Tracks accounts and transactions
-- Maintains balances correctly
-- Demonstrates how core banking logic can be implemented
+Financial accounting requires a systematic way to record, organize, and review monetary transactions. Without a structured system, tracking debits, credits, account balances, and journal entries becomes error-prone and difficult to audit. This project addresses that by implementing a double-entry bookkeeping ledger as a CLI application.
 
 ---
 
 ## Deliverable Definition
 
-Build a financial transaction ledger CLI in Go demonstrating data structures, custom types, encapsulation, and interfaces.
+A Go CLI application that implements core double-entry bookkeeping concepts: a Chart of Accounts, a General Journal, and a General Ledger. Users can create accounts, record and update journal entries, and view financial data through a set of commands backed by a SQLite database.
 
 ---
 
@@ -57,7 +47,7 @@ Build a financial transaction ledger CLI in Go demonstrating data structures, cu
 - Structs for domain modeling
 
 ### Types & Abstraction
-- Custom types (e.g., AccountID, Currency)
+- Custom types (e.g., Id, Currency)
 - Encapsulation via unexported fields
 - Struct embedding for reuse
 - Interfaces for decoupling behavior
@@ -72,10 +62,15 @@ Build a financial transaction ledger CLI in Go demonstrating data structures, cu
 ## Project Requirements
 
 ### Functional Requirements
-- Create and manage accounts
-- Record financial transactions
-- Compute balances dynamically
-- Track transaction history
+
+- Create and manage accounts organized by account type (Assets, Liabilities, Equities, Revenues, Expenses)
+- Record double-entry journal entries with debit/credit accounts, amount, date, and explanation
+- View the General Journal with filtering by date range and posting status
+- View the Chart of Accounts and account details
+- View the General Ledger with per-account transaction history
+- Post journal entries to the ledger
+- Unpost journal entries from the ledger
+- Update or delete journal entries that are not posted
 
 ### Non-Functional Requirements
 - Clear and maintainable code structure
@@ -86,46 +81,33 @@ Build a financial transaction ledger CLI in Go demonstrating data structures, cu
 ---
 
 ## Core Features
-### Account Management
-```bash
-ledger create-account <name>
-ledger list-accounts
-```
 
-### Transactions
-```bash
-ledger deposit <account_id> <amount>
-ledger withdraw <account_id> <amount>
-ledger transfer <from> <to> <amount>
-```
-
-### Ledger Operations
-```bash
-ledger balance <account_id>
-ledger history <account_id>
-```
+- Chart of Accounts with 5 default account types (Assets, Liabilities, Equities, Revenues, Expenses), each with a numeric ref prefix (1xxx–9xxx)
+- General Journal with double-entry recording, date filtering, and posted/not-posted views
+- General Ledger with per-account T-account style display (Date | Debit | Credit | Balance)
+- SQLite persistence via modernc.org/sqlite — no CGO required
+- Currency stored as integer cents with banker's rounding on float conversion
+- UUID-based identity for all domain entities
 
 ---
 
 ## Application Structure
 
-```
-cmd/
-	main.go
-
-internal/
-  account/
-		account.go
-  transaction/
-		transaction.go
-  ledger/
-		ledger.go
-
-  storage/
-		memory.go
-
-  cli/
-		commands.go
+```bash
+src/
+├── main.go
+└── internal/
+    ├── cli/          # Command parsing and dispatch
+    ├── database/     # SQLite persistence layer
+    ├── ledger/       # Root aggregate, orchestrates chart + journal
+    ├── chart/        # Chart of Accounts
+    ├── accountType/  # Account type (Assets, Liabilities, etc.)
+    ├── account/      # Account and AccountEntry
+    ├── journal/      # General Journal
+    ├── entry/        # Journal Entry
+    ├── currency/     # Currency type (int64 cents) with banker's rounding
+    ├── id/           # UUID wrapper
+    └── ui/           # CLI input helpers
 ```
 
 ### Structure Goals
@@ -136,81 +118,35 @@ internal/
 ---
 
 ## Development Plan
-### Step 1 — Domain Modeling
-- Define Account struct
-- Define Transaction struct
-- Define transaction types (deposit, withdraw, transfer)
-
-### Step 2 — Data Structures
-- Use slices to store transactions
-- Use maps to store accounts by ID
-
-### Step 3 — Ledger Logic
-- Implement:
-  - Deposit
-  - Withdraw
-  - Transfer
-- Ensure balance consistency
-
-### Step 4 — Abstraction
-- Introduce interfaces
-
-```go
-type TransactionProcessor interface {
-    Process(tx Transaction) error
-}
-```
-
-```go
-type Storage interface {
-    SaveTransaction(tx Transaction) error
-    GetTransactions(accountID string) []Transaction
-}
-```
-
-### Step 5 - CLI Interface
-- Parse commands
-- Connect CLI input to domain logic
-
-### Step 6 — Validation
-- Prevent invalid operations:
-  - Negative amounts
-  - Insufficient funds
-  - Introduce interfaces:
 
 ---
 
 ## Specifications
+
+### Ledger
+Root aggregate. Holds one Chart and one Journal. Provides all view and create operations used by the CLI.
+
+### Chart (Chart of Accounts)
+Holds a map of AccountTypes keyed by UUID. Accounts are looked up by ref (e.g. 1001) or by UUID.
+
+### Account Type
+Groups accounts by category. Has a refPrefix (1–9) that determines the thousands digit of account refs. Default types: Assets (1), Liabilities (2), Equities (3), Revenues (4), Expenses (9). Max 999 accounts per type.
+
 ### Account
-```go
-type Account struct {
-    ID      AccountID
-    Name    string
-    balance Currency
-}
-```
+Represents a ledger account. Has a UUID, a numeric ref (e.g. 1001), name (max 30 chars), description, and a collection of AccountEntries. Balance is calculated from entries.
 
-### Transaction
-```go
-type Transaction struct {
-    ID        string
-    Type      string
-    Amount    Currency
-    From      AccountID
-    To        AccountID
-    Timestamp time.Time
-}
-```
+### Account Entry
+A single posting to an account. Stores date, amount (cents), explanation, side (debit=false / credit=true), and running balance.
 
-### Rules
-- Balance must not be negative
-- Every action produces a transaction
-- Transfers affect two accounts
+### Journal (General Journal)
+Holds a map of Entries keyed by UUID. Entries are returned sorted by date.
+
+### Entry (A journal entry)
+Has a UUID, date, debit account, credit account, amount (Currency), explanation, and a posted flag. Can only be updated or deleted when not posted.
 
 ---
 
 ## User Stories
-
 ### Views
 #### General Journal (Journal)
 - [x] As a user, I want to view all journal entries
@@ -249,38 +185,14 @@ type Transaction struct {
 
 ```bash
 git clone https://github.com/yourusername/go-ledger-cli.git
-cd go-ledger-cli
-go run cmd/main.go
+cd go-ledger-cli/src
+go run main.go help
 ```
 
 ---
 
 ## Demo
 
-```bash
-$ ledger create-account Alice
-✅ Account created: acc_1
-
-$ ledger create-account Bob
-✅ Account created: acc_2
-
-$ ledger deposit acc_1 1000
-✅ Deposited 1000.00 to acc_1
-
-$ ledger transfer acc_1 acc_2 250
-✅ Transferred 250.00 from acc_1 to acc_2
-
-$ ledger balance acc_1
-💰 Balance: 750.00
-
-$ ledger balance acc_2
-💰 Balance: 250.00
-
-$ ledger history acc_1
-📜 Transactions:
-- Deposit: 1000.00
-- Transfer: -250.00 → acc_2
-```
 
 ---
 
@@ -296,8 +208,7 @@ This project demonstrates:
 
 ---
 
-## Future Improvements
-- Persistence (file or database)
+## Possible Future Improvements
 - REST API interface
 - Authentication layer
 - Concurrency-safe processing
@@ -320,8 +231,3 @@ Contributions are welcome! If you find any issues or have suggestions for improv
 ## License
 
 This project is licensed under the [MIT License](./LICENSE.md)
-
-
-# Notes
-- Value conversion fallow banker's rounding
-- Max account name length: 30 characters
