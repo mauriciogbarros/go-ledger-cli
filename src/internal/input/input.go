@@ -324,7 +324,42 @@ func InputEntryChoice(entries *[]*entry.Entry, year int, month int) (*entry.Entr
 	}
 }
 
-func InputEntryFieldChoice(entry *entry.Entry) (int, error) {
+func InputAccountFieldChoice() (int, error) {
+	options := []string {
+		"Name",
+		"Description",
+	}
+	var menu strings.Builder
+	menu.WriteString(" Choose account field\n")
+	menu.WriteString(strings.Repeat("─", 2))
+	menu.WriteString("─┬─")
+	menu.WriteString(strings.Repeat("─", 16))
+	menu.WriteString("\n")
+	for option, field := range options {
+		fmt.Fprintf(&menu, " %d │ %s\n", option + 1, field)
+	}
+	menu.WriteString(strings.Repeat("─", 2))
+	menu.WriteString("─┴─")
+	menu.WriteString(strings.Repeat("─", 16))
+	fmt.Println(menu.String())
+	fmt.Print("Choice: ")
+	input, err := reader.ReadString('\n')
+	fmt.Println()
+	if err != nil {
+		return 0, err
+	}
+	input = strings.TrimSpace(input)
+	choice, err := strconv.Atoi(input)
+	if err != nil {
+		return 0, err
+	}
+	if choice < 1 || choice > len(options) {
+		return 0, errors.New("Invalid choice")
+	}
+	return choice, nil
+}
+
+func InputEntryFieldChoice() (int, error) {
 	options := []string {
 		"Date",
 		"Amount",

@@ -393,6 +393,27 @@ func AddEntry(db *sql.DB, entry *entry.Entry) error {
 	return nil
 }
 
+func UpdateAccount(db *sql.DB, account *account.Account) error {
+	if account == nil {
+		return errors.New("Account - nil pointer dereference")
+	}
+	stmt, err := db.Prepare("UPDATE accounts SET ref=?, name=?, description=?, account_type_id=? WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	
+	sId := account.GetId().String()
+	ref := account.GetRef()
+	name := account.GetName()
+	description := account.GetDescription()
+	sAtId := account.GetAccountTypeId().String()
+	_, err = stmt.Exec(ref, name, description, sAtId, sId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func UpdateEntry(db *sql.DB, entry *entry.Entry) error {
 	if entry == nil {
 		return errors.New("Entry - nil pointer dereference")

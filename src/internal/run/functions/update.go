@@ -20,6 +20,14 @@ func Update(
 		return errors.New("Usage: ledger update <command>")
 	}
 
+	accounts, err := database.GetAccounts(db)
+	if err != nil {
+		return err
+	}
+	err = ledger.SetAccounts(accounts)
+	if err != nil {
+		return err
+	}
 	switch args[0] {
 	case "help":
 		updateHelp()
@@ -47,22 +55,58 @@ func updateHelp() {
 }
 
 func updateAccount(db *sql.DB, ledger *ledger.Ledger, args []string) error {
-	// TODO: Update account
-	fmt.Println("Update account - TBI")
-	return nil
+	switch len(args) {
+	case 1:
+		ref, err := input.InputAccountRef(ledger, "update")
+		if err != nil {
+			return err
+		}
+		account, err := ledger.GetChart().GetAccountByRef(ref)
+		if err != nil {
+			return nil
+		}
+		fmt.Println(account.String())
+		choice, err := input.InputAccountFieldChoice()
+		if err != nil {
+			return err
+		}
+		switch choice {
+		case 1:
+			name, err := input.InputAccountName()
+			if err != nil {
+				return err
+			}
+			err = account.SetName(name)
+			if err != nil {
+				return err
+			}
+
+		case 2:
+			description, err := input.InputText("Description")
+			if err != nil {
+				return err
+			}
+			account.SetDescription(description)
+
+		default:
+			return errors.New("Invalid field")
+		}
+		err = database.UpdateAccount(db, account)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Account updated successfully")
+		fmt.Println(account.String())
+		return nil
+	
+	default:
+		return errors.New("Usage: ledger update account")
+	}
 }
 
 func updateEntry(db *sql.DB, ledger *ledger.Ledger, args []string) error {
 	switch len(args) {
 	case 1:
-		accounts, err := database.GetAccounts(db)
-		if err != nil {
-			return err
-		}
-		err = ledger.SetAccounts(accounts)
-		if err != nil {
-			return err
-		}
 		fromDate, toDate, err := input.InputEntryYearMonth()
 		fmt.Println(fromDate, toDate)
 		if err != nil {
@@ -79,7 +123,7 @@ func updateEntry(db *sql.DB, ledger *ledger.Ledger, args []string) error {
 			return err
 		}
 		fmt.Println(entry.String())
-		choice, err := input.InputEntryFieldChoice(entry)
+		choice, err := input.InputEntryFieldChoice()
 		if err != nil {
 			return err
 		}

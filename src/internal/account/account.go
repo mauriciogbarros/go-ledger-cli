@@ -113,12 +113,24 @@ func (a *Account) GetBalance() currency.Currency {
 	return a.balance
 }
 
+func (a *Account) SetAccountTypeId(id id.Id) {
+	a.accountTypeId = id
+}
+
 func (a *Account) SetRef(ref int) {
 	a.ref = ref
 }
 
-func (a *Account) SetAccountTypeId(id id.Id) {
-	a.accountTypeId = id
+func (a *Account) SetName(name string) error {
+	if len(name) > MaxNameLength {
+		return errors.New("Account name exceed maximum length")
+	}
+	a.name = name
+	return nil
+}
+
+func (a *Account) SetDescription(description string) {
+	a.description = description
 }
 
 func (a *Account) AddEntry(entry *AccountEntry) error {
@@ -162,7 +174,5 @@ func (a *Account) String() string {
 	fmt.Fprintf(&output, "Description │ %s\n", a.description)
 	fmt.Fprintf(&output, "    Entries | %d\n", len(*a.entries))
 	fmt.Fprintf(&output, "    Balance │ %s\n", a.balance.String())
-	output.WriteString("\n")
-
 	return output.String()
 }
