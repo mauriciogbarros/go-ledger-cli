@@ -123,62 +123,77 @@ func updateEntry(db *sql.DB, ledger *ledger.Ledger, args []string) error {
 			return err
 		}
 		fmt.Println(entry.String())
+		if entry.IsPosted() {
+			isPosted, err := input.InputEntryIsPostedStatus(entry.IsPosted())
+			if err != nil {
+				return err
+			}
+			entry.SetIsPosted(isPosted)
+		} else {
 		choice, err := input.InputEntryFieldChoice()
 		if err != nil {
 			return err
 		}
-		switch choice {
-		case 1:
-			date, err := input.InputDate("Entry")
-			if err != nil {
-				return err
-			}
-			entry.SetDate(date)
+			switch choice {
+			case 1:
+				date, err := input.InputDate("Entry")
+				if err != nil {
+					return err
+				}
+				entry.SetDate(date)
 
-		case 2:
-			amountF64, err := input.InputAmountF64()
-			if err != nil {
-				return err
-			}
-			entry.SetAmount(amountF64)
+			case 2:
+				amountF64, err := input.InputAmountF64()
+				if err != nil {
+					return err
+				}
+				entry.SetAmount(amountF64)
 
-		case 3:
-			debitAccountRef, err := input.InputAccountRef(ledger, "debit")
-			if err != nil {
-				return err
-			}
-			if debitAccountRef == entry.GetCreditAccount().GetRef() {
-				return errors.New("Debit and Credit accounts must be different")
-			}
-			debitAccount, err := ledger.GetChart().GetAccountByRef(debitAccountRef)
-			if err != nil {
-				return err
-			}
-			entry.SetDebitAccount(debitAccount)
+			case 3:
+				debitAccountRef, err := input.InputAccountRef(ledger, "debit")
+				if err != nil {
+					return err
+				}
+				if debitAccountRef == entry.GetCreditAccount().GetRef() {
+					return errors.New("Debit and Credit accounts must be different")
+				}
+				debitAccount, err := ledger.GetChart().GetAccountByRef(debitAccountRef)
+				if err != nil {
+					return err
+				}
+				entry.SetDebitAccount(debitAccount)
 
-		case 4:
-			creditAccountRef, err := input.InputAccountRef(ledger, "credit")
-			if err != nil {
-				return err
-			}
-			if entry.GetDebitAccount().GetRef() == creditAccountRef {
-				return errors.New("Debit and Credit accounts must be different")
-			}
-			creditAccount, err := ledger.GetChart().GetAccountByRef(creditAccountRef)
-			if err != nil {
-				return err
-			}
-			entry.SetCreditAccount(creditAccount)
+			case 4:
+				creditAccountRef, err := input.InputAccountRef(ledger, "credit")
+				if err != nil {
+					return err
+				}
+				if entry.GetDebitAccount().GetRef() == creditAccountRef {
+					return errors.New("Debit and Credit accounts must be different")
+				}
+				creditAccount, err := ledger.GetChart().GetAccountByRef(creditAccountRef)
+				if err != nil {
+					return err
+				}
+				entry.SetCreditAccount(creditAccount)
 
-		case 5:
-			explanation, err := input.InputText("Explanation")
-			if err != nil {
-				return err
-			}
-			entry.SetExplanation(explanation)
+			case 5:
+				explanation, err := input.InputText("Explanation")
+				if err != nil {
+					return err
+				}
+				entry.SetExplanation(explanation)
 
-		default:
-			return errors.New("Invalid field")
+			case 6:
+				isPosted, err := input.InputEntryIsPostedStatus(entry.IsPosted())
+				if err != nil {
+					return err
+				}
+				entry.SetIsPosted(isPosted)
+
+			default:
+				return errors.New("Invalid field")
+			}
 		}
 		err = database.UpdateEntry(db, entry)
 		if err != nil {

@@ -1,7 +1,6 @@
 package entry
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -125,14 +124,8 @@ func (e *Entry) IsPosted() bool {
 	return e.isPosted
 }
 
-func (e *Entry) Post() error {
-	if e.isPosted {
-		return errors.New("journal entry already posted.")
-	}
-
-	e.isPosted = true
-
-	return nil
+func (e *Entry) SetIsPosted(isPosted bool) {
+	e.isPosted = isPosted
 }
 
 func (e *Entry) String() string {

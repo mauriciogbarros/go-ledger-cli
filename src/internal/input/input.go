@@ -366,6 +366,7 @@ func InputEntryFieldChoice() (int, error) {
 		"Debit Account",
 		"Credit Account",
 		"Explanation",
+		"Posted",
 	}
 	var menu strings.Builder
 	menu.WriteString(" Choose entry field\n")
@@ -395,4 +396,36 @@ func InputEntryFieldChoice() (int, error) {
 		return 0, errors.New("Invalid choice")
 	}
 	return choice, nil
+}
+
+func InputEntryIsPostedStatus(isPosted bool) (bool, error) {
+	if isPosted {
+		fmt.Print("Change entry to not-posted? (y/n) ")
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return false, err
+		}
+		input = strings.TrimSpace(input)
+		if input == "y" || input == "Y" {
+			return false, nil
+		} else if input == "n" || input == "N" {
+			return true, nil
+		} else {
+			return false, errors.New("Invalid input")
+		}
+	} else {
+		fmt.Print("Post entry? (y/n) ")
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return false, err
+		}
+		input = strings.TrimSpace(input)
+		if input == "y" || input == "Y" {
+			return true, nil
+		} else if input == "n" || input == "N" {
+			return false, nil
+		} else {
+			return false, errors.New("Invalid input")
+		}
+	}
 }
