@@ -131,7 +131,7 @@ func (e *Entry) Post() error {
 
 func (e *Entry) String() string {
 	var output strings.Builder
-	output.WriteString(strings.Repeat(" ", 15))
+	output.WriteString(strings.Repeat(" ", 18))
 	output.WriteString("Journal Entry Details\n")
 	output.WriteString(strings.Repeat("─", 15))
 	output.WriteString("─┬─")

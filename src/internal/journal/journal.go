@@ -32,10 +32,36 @@ func (j *Journal) GetName() string {
 func (j *Journal) GetEntries() *[]*entry.Entry {
 	entries := make([]*entry.Entry, 0)
 	if j.entries == nil {
-		return &entries
+		return nil
 	}
 	for _, entry := range *j.entries {
 		entries = append(entries, entry)
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].GetDate().Before(entries[j].GetDate())
+	})
+
+	return &entries
+}
+
+func (j *Journal) GetEntriesPosted(arePosted bool) *[]*entry.Entry {
+	entries := make([]*entry.Entry, 0)
+	if j.entries == nil {
+		return nil
+	}
+	if arePosted {
+		for _, entry := range *j.entries {
+			if entry.IsPosted() {
+				entries = append(entries, entry)
+			}
+		}
+	} else {
+		for _, entry := range *j.entries {
+			if !entry.IsPosted() {
+				entries = append(entries, entry)
+			}
+		}
 	}
 
 	sort.Slice(entries, func(i, j int) bool {
@@ -74,7 +100,7 @@ func (j *Journal) SetEntries(entries *[]*entry.Entry) error {
 	return nil
 }
 
-func (j Journal) String() string {
+func (j *Journal) ViewJournal() string {
 	var width int = 1 + 10 + 3 + account.MaxNameLength + 4 + 3 + 4 + 3 + 12 + 3 + 12 + 1
 	var paddingLeft = (width - len(j.name))/2
 	var output strings.Builder
@@ -185,5 +211,20 @@ func (j Journal) String() string {
 	}
 	output.WriteString("\n")
 	
+	return output.String()
+}
+
+func (j *Journal) String() string {
+	nEntriesPosted := len(*j.GetEntriesPosted(true))
+	nEntriesNotPosted := len(*j.GetEntriesPosted(false))
+	var output strings.Builder
+	output.WriteString("Journal Information\n")
+	output.WriteString(strings.Repeat("─", 18))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", 18))
+	output.WriteString("\n")
+	fmt.Fprintf(&output, "Name │ %s\n", j.name)
+	fmt.Fprintf(&output, "Entries Posted │ %d\n", nEntriesPosted)
+	fmt.Fprintf(&output, "Entries Not-Posted │ %d\n", nEntriesNotPosted)
 	return output.String()
 }

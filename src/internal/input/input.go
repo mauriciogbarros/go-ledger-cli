@@ -1,4 +1,4 @@
-package ui
+package input
 
 import (
 	"bufio"
@@ -125,7 +125,7 @@ func InputDate(dateField string) (time.Time, error) {
 	return date, nil
 }
 
-func InputAccountRef(ledger *ledger.Ledger) (int, error) {
+func InputAccountRef(ledger *ledger.Ledger, side string) (int, error) {
 	if ledger == nil {
 		return 0, errors.New("ledger is nil")
 	}
@@ -134,7 +134,7 @@ func InputAccountRef(ledger *ledger.Ledger) (int, error) {
 		return 0, errors.New("no accounts available")
 	}
 	var menu strings.Builder
-	menu.WriteString(" Ref   Accounts\n")
+	menu.WriteString(" Ref Accounts\n")
 	menu.WriteString("─")
 	menu.WriteString(strings.Repeat("─", 1 + 3))
 	menu.WriteString("─┬─")
@@ -156,7 +156,11 @@ func InputAccountRef(ledger *ledger.Ledger) (int, error) {
 	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("─")
 	fmt.Println(menu.String())
-	fmt.Print("Enter ref: ")
+	if len(side) == 0 {
+		fmt.Print("Enter ref: ")
+	} else {
+		fmt.Printf("Enter %s ref: ", side)
+	}
 	input, err := reader.ReadString('\n')
 	fmt.Println()
 	if err != nil {

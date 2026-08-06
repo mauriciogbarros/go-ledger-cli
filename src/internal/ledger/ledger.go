@@ -67,11 +67,6 @@ func (l *Ledger) SetAccounts(accounts *[]*account.Account) error {
 func (l *Ledger) SetJournalEntries(entries *[]*entry.Entry) {
 	l.journal.SetEntries(entries)
 }
-func (l *Ledger) IsBalanced() bool {
-	var isBalanced bool = true
-
-	return isBalanced
-}
 
 func (l *Ledger) ViewChart(refPrefix int) (string, error) {
 	return l.chart.String(refPrefix)
@@ -86,6 +81,10 @@ func (l *Ledger) ViewAccountType(refPrefix int) (string, error) {
 }
 
 func (l *Ledger) ViewJournal() (string) {
+	return l.journal.ViewJournal()
+}
+
+func (l *Ledger) ViewJournalInfo() string {
 	return l.journal.String()
 }
 
@@ -136,6 +135,7 @@ func (l *Ledger) CreateJournalEntry(date time.Time, debitAccountRef int, creditA
 func (l *Ledger) ViewAccounts() (string, error) {
 	return l.chart.ViewAccounts()
 }
+
 func (l *Ledger) ViewAccountByRef(ref int) (string, error) {
 	return l.chart.ViewAccountByRef(ref)
 }
@@ -146,7 +146,7 @@ func (l *Ledger) ViewTrialBalance() string {
 	return output
 }
 
-func (l *Ledger) String() (string, error) {
+func (l *Ledger) ViewLedger() (string, error) {
 	var widthTitle int = 1 + 10 + 3 + 30 + 3 + 12 + 3 + 12 + 3 + 12 + 1
 	var paddingTitleLeft int = (widthTitle - len(l.name)) / 2
 	var widthSubTitle int = 1 + 10 + 3 + 12 + 3 + 12 + 1
@@ -221,4 +221,26 @@ func (l *Ledger) String() (string, error) {
 	}
 
 	return output.String(), nil
+}
+
+func (l *Ledger) String() string {
+	nEntries := len(*l.journal.GetEntriesPosted(true))
+	var output strings.Builder
+	output.WriteString("                     Ledger Information\n")
+	output.WriteString(strings.Repeat("─", 18))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", 18))
+	output.WriteString("\n")
+	fmt.Fprintf(&output, "              Name │ %s\n", l.name)
+	fmt.Fprintf(&output, "     Account Types │ %d\n", len(*l.GetAccountTypes()))
+	fmt.Fprintf(&output, "          Accounts │ %d\n", len(*l.GetAccounts()))
+	fmt.Fprintf(&output, "           Entries │ %d\n", nEntries)
+	fmt.Fprintf(&output, "           Balance | %s\n", l.CalculateBalance().String())
+
+	return output.String()
+}
+
+func (l *Ledger) CalculateBalance() currency.Currency {
+	balance := currency.Currency(0)
+	return balance
 }
