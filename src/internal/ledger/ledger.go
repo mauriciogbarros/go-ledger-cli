@@ -141,20 +141,22 @@ func (l *Ledger) ViewAccountByRef(ref int) (string, error) {
 }
 
 func (l *Ledger) ViewTrialBalance() string {
+	// TODO: View trial balance
 	var output string
 
 	return output
 }
 
 func (l *Ledger) ViewLedger() (string, error) {
-	var widthTitle int = 1 + 10 + 3 + 30 + 3 + 12 + 3 + 12 + 3 + 12 + 1
-	var paddingTitleLeft int = (widthTitle - len(l.name)) / 2
-	var widthSubTitle int = 1 + 10 + 3 + 12 + 3 + 12 + 1
-	var paddingSubTitleLeft int = (widthSubTitle - 30 / 2)
+	var widthTitle int = 10 + 3 + 12 + 3 + 12 + 3 + 12
+	var paddingTitle int = (widthTitle - len(l.name)) / 2
+	var widthSubtitle int = widthTitle - 4 - 3
+	// var paddingSubtitle int = (widthSubTitle - 30 / 2)
 	var output strings.Builder
-	output.WriteString(strings.Repeat(" ", paddingTitleLeft))
+	output.WriteString(strings.Repeat(" ", paddingTitle))
 	fmt.Fprintf(&output, "%s\n", l.name)
 	output.WriteString(strings.Repeat("─", widthTitle))
+	output.WriteString("\n")
 	if l.chart == nil {
 		return "", errors.New("Chart - nil pointer dereference")
 	}
@@ -162,6 +164,12 @@ func (l *Ledger) ViewLedger() (string, error) {
 		if at == nil {
 			return "", errors.New("Account Types - nil pointer dereference")
 		}
+		fmt.Fprintf(&output, "%-*d", 4, at.GetRefPrefix())
+		output.WriteString(strings.Repeat(" ", 3))
+		output.WriteString(strings.Repeat(" ", (widthSubtitle - len(at.GetName())) / 2))
+		fmt.Fprintf(&output, "%s\n", at.GetName())
+		output.WriteString(strings.Repeat("─", widthTitle))
+		output.WriteString("\n")
 		accounts := at.GetAccounts()
 		if accounts == nil {
 			return "", errors.New("Accounts - nil pointer dereference")
@@ -171,17 +179,17 @@ func (l *Ledger) ViewLedger() (string, error) {
 				if a == nil {
 					return "", errors.New("Account - nil pointer dereference")
 				}
-				fmt.Fprintf(&output, "%-*s", paddingSubTitleLeft, a.GetName())
-				fmt.Fprintf(&output, "%*d", widthTitle - widthSubTitle, a.GetRef())
-				output.WriteString("\n")
-				output.WriteString(strings.Repeat("─", 1 + 10))
+				fmt.Fprintf(&output, "%-*d", 4, a.GetRef())
+				output.WriteString(strings.Repeat(" ", 3))
+				output.WriteString(strings.Repeat(" ", (widthSubtitle - len(a.GetName())) / 2))
+				fmt.Fprintf(&output, "%s\n", a.GetName())
+				output.WriteString(strings.Repeat("─", 10))
 				output.WriteString("─┬─")
 				output.WriteString(strings.Repeat("─", 12))
 				output.WriteString("─┬─")
 				output.WriteString(strings.Repeat("─", 12))
 				output.WriteString("─┬─")
 				output.WriteString(strings.Repeat("─", 12))
-				output.WriteString("─")
 				output.WriteString("\n")
 				fmt.Fprintf(&output, "%-*s", 10, "Date")
 				output.WriteString(" │ ")
@@ -191,18 +199,17 @@ func (l *Ledger) ViewLedger() (string, error) {
 				output.WriteString(" │ ")
 				fmt.Fprintf(&output, "%*s", 12, "Balance")
 				output.WriteString("\n")
-				output.WriteString(strings.Repeat("─", 1 + 10))
+				output.WriteString(strings.Repeat("─", 10))
 				output.WriteString("─┼─")
 				output.WriteString(strings.Repeat("─", 12))
 				output.WriteString("─┼─")
 				output.WriteString(strings.Repeat("─", 12))
 				output.WriteString("─┼─")
 				output.WriteString(strings.Repeat("─", 12))
-				output.WriteString("─")
 				output.WriteString("\n")
 				entries := a.GetEntries()
 				if entries == nil || len(*entries) == 0 {
-					output.WriteString(strings.Repeat(" ", 1 + 10 + 3))
+					output.WriteString(strings.Repeat(" ", 10 + 3))
 					output.WriteString("*No entries posted")
 					output.WriteString("\n")
 				}
@@ -211,11 +218,12 @@ func (l *Ledger) ViewLedger() (string, error) {
 						if e == nil {
 							return "", errors.New("Entries - nil pointer dereference")
 						}
-						fmt.Fprintf(&output, "%-*s", 1 + 10, e.GetDate().Format(time.DateOnly))
+						fmt.Fprintf(&output, "%-*s", 10, e.GetDate().Format(time.DateOnly))
 						output.WriteString(" │ ")
 						fmt.Fprintf(&output, "%*d", 12, e.GetAmount())
 					}
 				}
+				output.WriteString("\n")
 			}
 		}
 	}
@@ -224,23 +232,29 @@ func (l *Ledger) ViewLedger() (string, error) {
 }
 
 func (l *Ledger) String() string {
+	title := "Ledger Information"
+	width := 13 + 3 + len(l.name)
+	padding := (width - len(title)) / 2
 	nEntries := len(*l.journal.GetEntriesPosted(true))
 	var output strings.Builder
-	output.WriteString("                     Ledger Information\n")
-	output.WriteString(strings.Repeat("─", 18))
-	output.WriteString("─┬─")
-	output.WriteString(strings.Repeat("─", 18))
 	output.WriteString("\n")
-	fmt.Fprintf(&output, "              Name │ %s\n", l.name)
-	fmt.Fprintf(&output, "     Account Types │ %d\n", len(*l.GetAccountTypes()))
-	fmt.Fprintf(&output, "          Accounts │ %d\n", len(*l.GetAccounts()))
-	fmt.Fprintf(&output, "           Entries │ %d\n", nEntries)
-	fmt.Fprintf(&output, "           Balance | %s\n", l.CalculateBalance().String())
+	output.WriteString(strings.Repeat(" ", padding))
+	fmt.Fprintf(&output, "%s\n", title)
+	output.WriteString(strings.Repeat("─", 13))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", len(l.name)))
+	output.WriteString("\n")
+	fmt.Fprintf(&output, "         Name │ %s\n", l.name)
+	fmt.Fprintf(&output, "Account Types │ %d\n", len(*l.GetAccountTypes()))
+	fmt.Fprintf(&output, "     Accounts │ %d\n", len(*l.GetAccounts()))
+	fmt.Fprintf(&output, "      Entries │ %d\n", nEntries)
+	fmt.Fprintf(&output, "      Balance │ %s\n", l.CalculateBalance().String())
 
 	return output.String()
 }
 
 func (l *Ledger) CalculateBalance() currency.Currency {
+	// TODO: Calculate balance
 	balance := currency.Currency(0)
 	return balance
 }

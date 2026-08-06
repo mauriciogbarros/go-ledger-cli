@@ -294,7 +294,7 @@ func viewLedgerHelp() {
 	msg.WriteString("type    => view ledger for an account type\n")
 	msg.WriteString("account => view ledger for a single account\n")
 	msg.WriteString("trial   => view trial balance\n")
-	fmt.Println()
+	fmt.Println(msg.String())
 }
 
 func viewLedgerAll(db *sql.DB, ledger *ledger.Ledger) error {
