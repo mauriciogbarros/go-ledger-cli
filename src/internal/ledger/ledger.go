@@ -151,7 +151,6 @@ func (l *Ledger) ViewLedger() (string, error) {
 	var widthTitle int = 10 + 3 + 12 + 3 + 12 + 3 + 12
 	var paddingTitle int = (widthTitle - len(l.name)) / 2
 	var widthSubtitle int = widthTitle - 4 - 3
-	// var paddingSubtitle int = (widthSubTitle - 30 / 2)
 	var output strings.Builder
 	output.WriteString(strings.Repeat(" ", paddingTitle))
 	fmt.Fprintf(&output, "%s\n", l.name)
@@ -237,7 +236,6 @@ func (l *Ledger) String() string {
 	padding := (width - len(title)) / 2
 	nEntries := len(*l.journal.GetEntriesPosted(true))
 	var output strings.Builder
-	output.WriteString("\n")
 	output.WriteString(strings.Repeat(" ", padding))
 	fmt.Fprintf(&output, "%s\n", title)
 	output.WriteString(strings.Repeat("─", 13))
@@ -249,7 +247,6 @@ func (l *Ledger) String() string {
 	fmt.Fprintf(&output, "     Accounts │ %d\n", len(*l.GetAccounts()))
 	fmt.Fprintf(&output, "      Entries │ %d\n", nEntries)
 	fmt.Fprintf(&output, "      Balance │ %s\n", l.CalculateBalance().String())
-
 	return output.String()
 }
 

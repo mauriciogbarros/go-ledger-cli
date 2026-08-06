@@ -130,30 +130,33 @@ func (e *Entry) Post() error {
 }
 
 func (e *Entry) String() string {
+	title := "Journal Entry Information"
+	width := 14 + 3 + account.MaxNameLength
+	padding := (width - len(title)) / 2
 	var output strings.Builder
-	output.WriteString(strings.Repeat(" ", 18))
-	output.WriteString("Journal Entry Details\n")
-	output.WriteString(strings.Repeat("─", 15))
+	output.WriteString(strings.Repeat(" ", padding))
+	fmt.Fprintf(&output, "%s\n", title)
+	output.WriteString(strings.Repeat("─", 14))
 	output.WriteString("─┬─")
 	output.WriteString(strings.Repeat("─", account.MaxNameLength))
 	output.WriteString("\n")
-	fmt.Fprintf(&output, "             Id │ %s\n", e.id.String())
-	fmt.Fprintf(&output, "           Date │ %s\n", e.date.Format(time.DateOnly))
-	fmt.Fprintf(&output, "         Amount │ %s\n", e.amount.String())
-	fmt.Fprintf(&output, "  Debit Account │ %s", e.debitAccount.GetName())
+	fmt.Fprintf(&output, "            Id │ %s\n", e.id.String())
+	fmt.Fprintf(&output, "          Date │ %s\n", e.date.Format(time.DateOnly))
+	fmt.Fprintf(&output, "        Amount │ %s\n", e.amount.String())
+	fmt.Fprintf(&output, " Debit Account │ %s", e.debitAccount.GetName())
 	if e.isPosted {
 		fmt.Fprintf(&output, " (%d)\n", e.debitAccount.GetRef())
 	} else {
 		output.WriteString("\n")
 	}
-	fmt.Fprintf(&output, " Credit Account │ %s", e.creditAccount.GetName())
+	fmt.Fprintf(&output, "Credit Account │ %s", e.creditAccount.GetName())
 	if e.isPosted {
 		fmt.Fprintf(&output, " (%d)\n", e.creditAccount.GetRef())
 	} else {
 		output.WriteString("\n")
 	}
 
-	output.WriteString("    Explanation │ ")
+	output.WriteString("   Explanation │ ")
 	words := strings.Split(e.GetExplanation(), " ")
 	var explanation strings.Builder
 	for i := 0; i < len(words); {
@@ -175,7 +178,7 @@ func (e *Entry) String() string {
 			output.WriteString(" │ ")
 		}
 	}
-	output.WriteString("         Posted │ ")
+	output.WriteString("        Posted │ ")
 	if e.isPosted {
 		output.WriteString("Yes\n")
 	} else {

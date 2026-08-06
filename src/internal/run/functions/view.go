@@ -403,15 +403,14 @@ func viewJournalInfo(db *sql.DB, ledger *ledger.Ledger) error {
 }
 func viewJournalHelp() {
 	var msg strings.Builder
-	msg.WriteString("View Journal\n")
 	msg.WriteString("Argument options:\n")
-	msg.WriteString("- <empty>: view journal info\n")
-	msg.WriteString("- help: view this help\n")
-	msg.WriteString("- all: view all entries\n")
-	msg.WriteString("- dates: view entries from date to date\n")
-	msg.WriteString("- posted: view all entries posted\n")
-	msg.WriteString("- not-posted: view all entries not posted\n")
-	msg.WriteString("- entry: view an entry information\n")
+	msg.WriteString("<empty>      => view journal info\n")
+	msg.WriteString("help         => view this help\n")
+	msg.WriteString("all          => view all entries\n")
+	msg.WriteString("dates        => view entries from date to date\n")
+	msg.WriteString("posted       => view all entries posted\n")
+	msg.WriteString("not-posted   => view all entries not posted\n")
+	msg.WriteString("entry        => view an entry information\n")
 	fmt.Println(msg.String())
 }
 

@@ -101,13 +101,13 @@ func (j *Journal) SetEntries(entries *[]*entry.Entry) error {
 }
 
 func (j *Journal) ViewJournal() string {
-	var width int = 1 + 10 + 3 + account.MaxNameLength + 4 + 3 + 4 + 3 + 12 + 3 + 12 + 1
-	var paddingLeft = (width - len(j.name))/2
+	var width int = 10 + 3 + account.MaxNameLength + 4 + 3 + 4 + 3 + 12 + 3 + 12
+	var padding = (width - len(j.name))/2
 	var output strings.Builder
-	output.WriteString(strings.Repeat(" ", paddingLeft))
+	output.WriteString(strings.Repeat(" ", padding))
 	output.WriteString(j.name)
 	output.WriteString("\n")
-	output.WriteString(strings.Repeat("─", 1 + 10))
+	output.WriteString(strings.Repeat("─", 10))
 	output.WriteString("─┬─")
 	output.WriteString(strings.Repeat("─", account.MaxNameLength + 4))
 	output.WriteString("─┬─")
@@ -115,9 +115,8 @@ func (j *Journal) ViewJournal() string {
 	output.WriteString("─┬─")
 	output.WriteString(strings.Repeat("─", 12))
 	output.WriteString("─┬─")
-	output.WriteString(strings.Repeat("─", 12 + 1))
+	output.WriteString(strings.Repeat("─", 12))
 	output.WriteString("\n")
-	output.WriteString(" ")
 	fmt.Fprintf(&output, "%-*s", 10, "Date")
 	output.WriteString(" │ ")
 	fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 4, "Accounts & Explanation")
@@ -126,9 +125,8 @@ func (j *Journal) ViewJournal() string {
 	output.WriteString(" │ ")
 	fmt.Fprintf(&output, "%*s", 12, "Debit")
 	output.WriteString(" │ ")
-	fmt.Fprintf(&output, "%*s", 12, "Credit")
-	output.WriteString("\n")
-	output.WriteString(strings.Repeat("─", 1 + 10))
+	fmt.Fprintf(&output, "%*s\n", 12, "Credit")
+	output.WriteString(strings.Repeat("─", 10))
 	output.WriteString("─┼─")
 	output.WriteString(strings.Repeat("─", account.MaxNameLength + 4))
 	output.WriteString("─┼─")
@@ -136,11 +134,11 @@ func (j *Journal) ViewJournal() string {
 	output.WriteString("─┼─")
 	output.WriteString(strings.Repeat("─", 12))
 	output.WriteString("─┼─")
-	output.WriteString(strings.Repeat("─", 12 + 1))
+	output.WriteString(strings.Repeat("─", 12))
 	output.WriteString("\n")
 
 	if j.entries == nil || len(*j.entries) == 0 {
-		output.WriteString(strings.Repeat(" ", 1 + 10 + 3))
+		output.WriteString(strings.Repeat(" ", 10 + 3))
 		output.WriteString("*No entires\n")
 	} else {
 		entries := j.GetEntries()
@@ -150,7 +148,6 @@ func (j *Journal) ViewJournal() string {
 			if e == nil || debitAccount == nil || creditAccount == nil {
 				continue
 			}
-			output.WriteString(" ")
 			fmt.Fprintf(&output, "%-*s", 10, e.GetDate().Format(time.DateOnly))
 			output.WriteString(" │ ")
 			fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 4, debitAccount.GetName())
@@ -163,7 +160,6 @@ func (j *Journal) ViewJournal() string {
 			output.WriteString(" │ ")
 			fmt.Fprintf(&output, "%*s", 12, e.GetAmount().String())
 			output.WriteString(" │\n")
-			output.WriteString(" ")
 			output.WriteString(strings.Repeat(" ", 10))
 			output.WriteString(" │   ")
 			fmt.Fprintf(&output, "%-*s", account.MaxNameLength + 2, creditAccount.GetName())
@@ -193,7 +189,6 @@ func (j *Journal) ViewJournal() string {
 					}
 				}
 
-				output.WriteString(" ")
 				output.WriteString(strings.Repeat(" ", 10))
 				output.WriteString(" │     ")
 				fmt.Fprintf(&output, "%-*s", account.MaxNameLength, &explanation)
@@ -209,7 +204,6 @@ func (j *Journal) ViewJournal() string {
 			}
 		}
 	}
-	output.WriteString("\n")
 	
 	return output.String()
 }
@@ -217,14 +211,18 @@ func (j *Journal) ViewJournal() string {
 func (j *Journal) String() string {
 	nEntriesPosted := len(*j.GetEntriesPosted(true))
 	nEntriesNotPosted := len(*j.GetEntriesPosted(false))
+	title := "Journal Information"
+	width := 18 + 3 + len(j.name)
+	padding := (width - len(title)) / 2
 	var output strings.Builder
-	output.WriteString("Journal Information\n")
+	output.WriteString(strings.Repeat(" ", padding))
+	fmt.Fprintf(&output, "%s\n", title)
 	output.WriteString(strings.Repeat("─", 18))
 	output.WriteString("─┬─")
-	output.WriteString(strings.Repeat("─", 18))
+	output.WriteString(strings.Repeat("─", len(j.name)))
 	output.WriteString("\n")
-	fmt.Fprintf(&output, "Name │ %s\n", j.name)
-	fmt.Fprintf(&output, "Entries Posted │ %d\n", nEntriesPosted)
+	fmt.Fprintf(&output, "              Name │ %s\n", j.name)
+	fmt.Fprintf(&output, "    Entries Posted │ %d\n", nEntriesPosted)
 	fmt.Fprintf(&output, "Entries Not-Posted │ %d\n", nEntriesNotPosted)
 	return output.String()
 }

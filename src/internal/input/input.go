@@ -44,7 +44,8 @@ func InputAccountTypeRefPrefix(ledger *ledger.Ledger) (int, error) {
 		return 0, errors.New("no account types available")
 	}
 	options := make([]int, 0)
-	fmt.Println("Choose the account type:")
+	fmt.Println("Choose an account type:")
+	fmt.Println(strings.Repeat("─", 3 + accountType.MaxNameLength))
 	for _, at := range *accountTypes {
 		if at == nil {
 			continue
@@ -52,7 +53,6 @@ func InputAccountTypeRefPrefix(ledger *ledger.Ledger) (int, error) {
 		options = append(options, at.GetRefPrefix())
 		fmt.Printf("%d. %s\n", at.GetRefPrefix(), at.GetName())
 	}
-	fmt.Println(strings.Repeat("─", 3 + accountType.MaxNameLength))
 	fmt.Print("Choice: ")
 
 	input, err := reader.ReadString('\n')
@@ -225,22 +225,22 @@ func InputEntryChoice(entries *[]*entry.Entry, year int, month int) (*entry.Entr
 		return nil, errors.New("Entries - nil pointer dereference")
 	}
 	choices := make(map[int]*entry.Entry, 0)
-	width := 1 + 6 + 3 + 10 + 3 + account.MaxNameLength + 3 + account.MaxNameLength + 3 + account.MaxNameLength + 1
+	width := 6 + 3 + 10 + 3 + account.MaxNameLength + 3 + account.MaxNameLength + 3 + account.MaxNameLength
 	title := fmt.Sprintf("Entries for %d-%d", year, month)
 	var menu strings.Builder
 	menu.WriteString("\n")
 	menu.WriteString(strings.Repeat(" ", (width - len(title)) / 2))
 	menu.WriteString(title)
 	menu.WriteString("\n")
-	menu.WriteString(strings.Repeat("─", 1 + 6))
+	menu.WriteString(strings.Repeat("─", 6))
 	menu.WriteString("─┬─")
 	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("─┬─")
 	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("─┬─")
-	menu.WriteString(strings.Repeat("─", account.MaxNameLength + 1))
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("\n")
-	menu.WriteString(" Option")
+	menu.WriteString("Option")
 	menu.WriteString(" │ ")
 	fmt.Fprintf(&menu, "%-*s", account.MaxNameLength, "Debit Account")
 	menu.WriteString(" │ ")
@@ -248,13 +248,13 @@ func InputEntryChoice(entries *[]*entry.Entry, year int, month int) (*entry.Entr
 	menu.WriteString(" │ ")
 	fmt.Fprintf(&menu, "%-*s", account.MaxNameLength, "Explanation")
 	menu.WriteString("\n")
-	menu.WriteString(strings.Repeat("─", 1 + 6))
+	menu.WriteString(strings.Repeat("─", 6))
 	menu.WriteString("─┼─")
 	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("─┼─")
 	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("─┼─")
-	menu.WriteString(strings.Repeat("─", account.MaxNameLength + 1))
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("\n")
 
 	for c, e := range *entries {
@@ -262,8 +262,8 @@ func InputEntryChoice(entries *[]*entry.Entry, year int, month int) (*entry.Entr
 			return nil, errors.New("Entry - nil pointer dereferencing")
 		}
 		choices[c + 1] = e
-		menu.WriteString(" ")
-		fmt.Fprintf(&menu, "%-*d", 6, c + 1)
+		menu.WriteString(strings.Repeat(" ", 2))
+		fmt.Fprintf(&menu, "%-*d", 4, c + 1)
 		menu.WriteString(" │ ")
 		fmt.Fprintf(&menu,"%-*s", account.MaxNameLength, e.GetDebitAccount().GetName())
 		menu.WriteString(" │ ")
@@ -286,7 +286,7 @@ func InputEntryChoice(entries *[]*entry.Entry, year int, month int) (*entry.Entr
 			fmt.Fprintf(&menu, "%-*s\n", account.MaxNameLength, &explanation)
 			if i < len(words) {
 				explanation.Reset()
-				menu.WriteString(strings.Repeat(" ", 1 + 6))
+				menu.WriteString(strings.Repeat(" ", 6))
 				menu.WriteString(" │ ")
 				menu.WriteString(strings.Repeat(" ", account.MaxNameLength))
 				menu.WriteString(" │ ")
@@ -296,13 +296,13 @@ func InputEntryChoice(entries *[]*entry.Entry, year int, month int) (*entry.Entr
 		}
 	}
 
-	menu.WriteString(strings.Repeat("─", 1 + 6))
+	menu.WriteString(strings.Repeat("─", 6))
 	menu.WriteString("─┴─")
 	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("─┴─")
 	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("─┴─")
-	menu.WriteString(strings.Repeat("─", account.MaxNameLength + 1))
+	menu.WriteString(strings.Repeat("─", account.MaxNameLength))
 	menu.WriteString("\n")
 	fmt.Print(menu.String())
 	fmt.Print("Choice: ")

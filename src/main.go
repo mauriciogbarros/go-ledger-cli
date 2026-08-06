@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	fmt.Println()
 	err := run.Run()
 	if err != nil {
 		log.Printf("Error => %v\n", err)

@@ -163,9 +163,8 @@ func (c *Chart) CreateAccount(accountTypeRefPrefix int, name string, description
 }
 
 func (c *Chart) String(refPrefix int) (string, error) {
-	width := 4 + 3 + 38
+	width := 4 + 3 + account.MaxNameLength
 	var output strings.Builder
-	output.WriteString("\n")
 	output.WriteString(strings.Repeat(" ", (width - len(c.name))/ 2))
 	fmt.Fprintf(&output, "%s\n", c.name)
 	output.WriteString(strings.Repeat("─", width))
@@ -182,13 +181,12 @@ func (c *Chart) String(refPrefix int) (string, error) {
 		}
 		writeAccountTypeSection(&output, at, width)
 	}
-	output.WriteString("\n")
 
 	return output.String(), nil
 }
 
 func (c *Chart) ViewAccountTypes() string {
-	width := 1 + 10 + 3 + accountType.MaxNameLength + 3 + 8 + 1
+	width := 10 + 3 + accountType.MaxNameLength + 3 + 8
 	title := "Account Types"
 	paddingTitle := (width - len(title)) / 2
 	
@@ -197,30 +195,30 @@ func (c *Chart) ViewAccountTypes() string {
 	output.WriteString(strings.Repeat(" ", paddingTitle))
 	output.WriteString(title)
 	output.WriteString("\n")
-	output.WriteString(strings.Repeat("─", 1 + 10))
+	output.WriteString(strings.Repeat("─", 10))
 	output.WriteString("─┬─")
 	output.WriteString(strings.Repeat("─", accountType.MaxNameLength))
 	output.WriteString("─┬─")
-	output.WriteString(strings.Repeat("─", 8 + 1))
+	output.WriteString(strings.Repeat("─", 8))
 	output.WriteString("\n")
-	output.WriteString(" Ref Prefix │ ")
+	output.WriteString("Ref Prefix │ ")
 	fmt.Fprintf(&output, "%-*s", accountType.MaxNameLength, "Name")
 	output.WriteString(" │ Accounts\n")
-	output.WriteString(strings.Repeat("─", 1 + 10))
+	output.WriteString(strings.Repeat("─", 10))
 	output.WriteString("─┼─")
 	output.WriteString(strings.Repeat("─", accountType.MaxNameLength))
 	output.WriteString("─┼─")
-	output.WriteString(strings.Repeat("─", 8 + 1))
+	output.WriteString(strings.Repeat("─", 8))
 	output.WriteString("\n")
 	for _, at := range *c.GetAccountTypes() {
-		fmt.Fprintf(&output, " %*d", 10, at.GetRefPrefix())
+		output.WriteString(strings.Repeat(" ", 5))
+		fmt.Fprintf(&output, "%-*d", 5, at.GetRefPrefix())
 		output.WriteString(" │ ")
 		fmt.Fprintf(&output, "%-*s", accountType.MaxNameLength, at.GetName())
 		output.WriteString(" │ ")
-		fmt.Fprintf(&output, "%*d", 8, len(*at.GetAccountsMap()))
-		output.WriteString("\n")
+		output.WriteString(strings.Repeat(" ", 4))
+		fmt.Fprintf(&output, "%d\n", len(*at.GetAccountsMap()))
 	}
-
 	return output.String()
 }
 
@@ -238,30 +236,29 @@ func (c *Chart) ViewAccounts() (string, error) {
 	if accountTypes == nil {
 		return "", errors.New("Nil pointer dereferencing")
 	}
-	width := 1 + 4 + 3 + account.MaxNameLength + 3 + accountType.MaxNameLength + 1
+	width := 4 + 3 + account.MaxNameLength + 3 + accountType.MaxNameLength
 	title := "Accounts"
 	paddingTitle := (width - len(title)) / 2
 	var output strings.Builder
 	output.WriteString(strings.Repeat(" ", paddingTitle))
 	output.WriteString(title)
 	output.WriteString("\n")
-	output.WriteString(strings.Repeat("─", 1 + 4))
+	output.WriteString(strings.Repeat("─", 4))
 	output.WriteString("─┬─")
 	output.WriteString(strings.Repeat("─", account.MaxNameLength))
 	output.WriteString("─┬─")
-	output.WriteString(strings.Repeat("─", accountType.MaxNameLength + 1))
+	output.WriteString(strings.Repeat("─", accountType.MaxNameLength))
 	output.WriteString("\n")
-	output.WriteString(" Ref ")
+	output.WriteString("Ref ")
 	output.WriteString(" │ ")
 	fmt.Fprintf(&output, "%-*s", account.MaxNameLength, "Name")
 	output.WriteString(" │ ")
-	fmt.Fprintf(&output, "%-*s", accountType.MaxNameLength, "Type")
-	output.WriteString("\n")
-	output.WriteString(strings.Repeat("─", 1 + 4))
+	fmt.Fprintf(&output, "%-*s\n", accountType.MaxNameLength, "Type")
+	output.WriteString(strings.Repeat("─", 4))
 	output.WriteString("─┼─")
 	output.WriteString(strings.Repeat("─", account.MaxNameLength))
 	output.WriteString("─┼─")
-	output.WriteString(strings.Repeat("─", accountType.MaxNameLength + 1))
+	output.WriteString(strings.Repeat("─", accountType.MaxNameLength))
 	output.WriteString("\n")
 	for _, at := range *accountTypes {
 		if at == nil {
@@ -272,15 +269,13 @@ func (c *Chart) ViewAccounts() (string, error) {
 			continue
 		}
 		for _, a := range *accounts {
-			fmt.Fprintf(&output, " %d", a.GetRef())
+			fmt.Fprintf(&output, "%d", a.GetRef())
 			output.WriteString(" │ ")
 			fmt.Fprintf(&output, "%-*s", account.MaxNameLength, a.GetName())
 			output.WriteString(" │ ")
-			fmt.Fprintf(&output, "%-*s", accountType.MaxNameLength, at.GetName())
-			output.WriteString("\n")
+			fmt.Fprintf(&output, "%-*s\n", accountType.MaxNameLength, at.GetName())
 		}
 	}
-	output.WriteString("\n")
 
 	return output.String(), nil
 }

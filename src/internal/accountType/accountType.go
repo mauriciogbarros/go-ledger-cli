@@ -126,16 +126,20 @@ func (at *AccountType) AddAccount(account *account.Account) (int, error) {
 }
 
 func (at *AccountType) String() string {
+	width := 10 + 3 + 36
+	title := "Account Type Information"
+	padding := (width - len(title)) / 2
 	var output strings.Builder
-	output.WriteString("              Account Type\n")
-	output.WriteString(strings.Repeat("─", 11))
+	output.WriteString(strings.Repeat(" ", padding))
+	fmt.Fprintf(&output, "%s\n", title)
+	output.WriteString(strings.Repeat("─", 10))
 	output.WriteString("─┬─")
-	output.WriteString(strings.Repeat("─", 38))
+	output.WriteString(strings.Repeat("─", 36))
 	output.WriteString("\n")
-	output.WriteString(fmt.Sprintf("       Name │ %s\n", at.name))
-	output.WriteString(fmt.Sprintf("         Id │ %s\n", at.id))
-	output.WriteString(fmt.Sprintf(" Ref Prefix │ %d\n", at.refPrefix))
-	output.WriteString(fmt.Sprintf("   Accounts │ %d\n", len(*at.accounts)))
+	output.WriteString(fmt.Sprintf("      Name │ %s\n", at.name))
+	output.WriteString(fmt.Sprintf("        Id │ %s\n", at.id))
+	output.WriteString(fmt.Sprintf("Ref Prefix │ %d\n", at.refPrefix))
+	output.WriteString(fmt.Sprintf("  Accounts │ %d\n", len(*at.accounts)))
 
 	return output.String()
 }
