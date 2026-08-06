@@ -245,7 +245,7 @@ func viewJournal(db *sql.DB, ledger *ledger.Ledger, args []string) error {
 		return viewJournalInfo(db, ledger)
 
 	case 2:
-		switch args[0] {
+		switch args[1] {
 		case "help":
 			viewJournalHelp()
 			return nil

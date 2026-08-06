@@ -97,19 +97,20 @@ A Go CLI application that implements core double-entry bookkeeping concepts: a C
 src/
 ├── main.go
 └── internal/
-    ├── cli/          # Command parsing and dispatch
-    ├── database/     # SQLite persistence layer
-    ├── ledger/       # Root aggregate, orchestrates
-    │                 # chart + journal
-    ├── chart/        # Chart of Accounts
-    ├── accountType/  # Account type (Assets, Liabilities, etc.)
-    ├── account/      # Account and AccountEntry
-    ├── journal/      # General Journal
-    ├── entry/        # Journal Entry
-    ├── currency/     # Currency type (int64 cents) with
-    │                 # banker's rounding
-    ├── id/           # UUID wrapper
-    └── ui/           # CLI input helpers
+    ├── run/           # Command parsing and dispatch
+    │   └── functions/ # view, new, update, delete handlers
+    ├── database/      # SQLite persistence layer
+    ├── ledger/        # Root aggregate, orchestrates
+    │                  # chart + journal
+    ├── chart/         # Chart of Accounts
+    ├── accountType/   # Account type (Assets, Liabilities, etc.)
+    ├── account/       # Account and AccountEntry
+    ├── journal/       # General Journal
+    ├── entry/         # Journal Entry
+    ├── currency/      # Currency type (int64 cents) with
+    │                  # banker's rounding
+    ├── id/            # UUID wrapper
+    └── input/         # CLI input helpers
 ```
 ### Entity Diagram
 
@@ -240,7 +241,7 @@ Has a UUID, date, debit account, credit account, amount (Currency), explanation,
 - [x] As a user, I want to view the details for an account
 
 #### Ledger
-- [ ] As a user, I want to view the "General Ledger"
+- [x] As a user, I want to view the "General Ledger"
 - [ ] As a user, I want to view the ledger of an account type
 - [ ] As a user, I want to view the ledger of an account
 - [ ] As a user, I want to view the "Trial Balance"
@@ -257,6 +258,41 @@ Has a UUID, date, debit account, credit account, amount (Currency), explanation,
 
 ### Delete
 - [ ] As a user, I want to delete an entry that is not-posted
+
+---
+
+## CLI Reference
+
+```
+ledger <function> <command> [arg]
+
+Functions:
+  help                   Show help
+  view <command> [arg]   Viewing functions
+  new <command>          Create functions
+  update <command>       Update functions
+  delete <command>       Delete functions
+
+view commands:
+  ledger [all|type|account|trial]  View the General Ledger
+  chart [type]                     View the Chart of Accounts
+  types                            View all account types
+  type                             View details for an account type
+  accounts                         View all accounts
+  account                          View details for an account
+  journal [all|dates|posted|not-posted|entry]  View the General Journal
+
+new commands:
+  account   Create a new account
+  entry     Create a new journal entry
+
+update commands:
+  account   Update account details (TBI)
+  entry     Update a not-posted journal entry (TBI)
+
+delete commands:
+  entry     Delete a not-posted journal entry (TBI)
+```
 
 ---
 
