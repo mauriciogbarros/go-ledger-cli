@@ -215,7 +215,7 @@ func InputEntryYearMonth() (time.Time, time.Time, error) {
 		return time.Time{}, time.Time{}, errors.New("Month must be between 1 and 12")
 	}
 	fromDate := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-	toDate := time.Date(year, time.Month(month + 1), -1, 0, 0, 0, 0, time.UTC)
+	toDate := time.Date(year, time.Month(month) + 1, 0, 0, 0, 0, 0, time.UTC)
 
 	return fromDate, toDate, nil
 }
@@ -322,4 +322,42 @@ func InputEntryChoice(entries *[]*entry.Entry, year int, month int) (*entry.Entr
 	} else {
 		return nil, errors.New("Invalid choice")
 	}
+}
+
+func InputEntryFieldChoice(entry *entry.Entry) (int, error) {
+	options := []string {
+		"Date",
+		"Amount",
+		"Debit Account",
+		"Credit Account",
+		"Explanation",
+	}
+	var menu strings.Builder
+	menu.WriteString(" Choose entry field\n")
+	menu.WriteString(strings.Repeat("─", 2))
+	menu.WriteString("─┬─")
+	menu.WriteString(strings.Repeat("─", 14))
+	menu.WriteString("\n")
+	for option, field := range options {
+		fmt.Fprintf(&menu, " %d │ %s\n", option + 1, field)
+	}
+	menu.WriteString(strings.Repeat("─", 2))
+	menu.WriteString("─┴─")
+	menu.WriteString(strings.Repeat("─", 14))
+	fmt.Println(menu.String())
+	fmt.Print("Choice: ")
+	input, err := reader.ReadString('\n')
+	fmt.Println()
+	if err != nil {
+		return 0, err
+	}
+	input = strings.TrimSpace(input)
+	choice, err := strconv.Atoi(input)
+	if err != nil {
+		return 0, err
+	}
+	if choice < 1 || choice > len(options) {
+		return 0, errors.New("Invalid choice")
+	}
+	return choice, nil
 }

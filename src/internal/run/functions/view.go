@@ -415,14 +415,6 @@ func viewJournalHelp() {
 }
 
 func viewJournalAll(db *sql.DB, ledger *ledger.Ledger) error {
-	accounts, err := database.GetAccounts(db)
-	if err != nil {
-		return err
-	}
-	err = ledger.SetAccounts(accounts)
-	if err != nil {
-		return err
-	}
 	entries, err := database.GetEntries(db, ledger)
 	if err != nil {
 		return err

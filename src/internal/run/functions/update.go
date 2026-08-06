@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"go.mod/internal/database"
+	"go.mod/internal/input"
 	"go.mod/internal/ledger"
 )
 
@@ -54,32 +55,96 @@ func updateAccount(db *sql.DB, ledger *ledger.Ledger, args []string) error {
 func updateEntry(db *sql.DB, ledger *ledger.Ledger, args []string) error {
 	switch len(args) {
 	case 1:
-		entries, err := database.GetEntriesPosted(db, ledger, false)
+		accounts, err := database.GetAccounts(db)
 		if err != nil {
 			return err
 		}
-		if entries == nil {
-			fmt.Println("All entries posted")
-			return nil
+		err = ledger.SetAccounts(accounts)
+		if err != nil {
+			return err
 		}
-		
-		var msg strings.Builder
-		msg.WriteString("Usage: ledger update entry\n")
-		msg.WriteString("Only accounts not-posted may be updated.")
-		msg.WriteString("Argument options:\n")
-		msg.WriteString("─────────────────\n")
-		msg.WriteString("date => udpate the entry's date\n")
-		msg.WriteString("debit => update the entry's debit account\n")
-		msg.WriteString("credit => update the entry's credit account\n")
-		msg.WriteString("explanation => update the entry's explanation\n")
-		msg.WriteString("amount => update the entry's amount\n")
-		msg.WriteString("post => change the entry's status")
+		fromDate, toDate, err := input.InputEntryYearMonth()
+		fmt.Println(fromDate, toDate)
+		if err != nil {
+			return err
+		}
+		year := fromDate.Year()
+		month := int(fromDate.Month())
+		entries, err := database.GetEntriesBetweenDates(db, ledger, fromDate, toDate)
+		if err != nil {
+			return err
+		}
+		entry, err := input.InputEntryChoice(entries, year, month)
+		if err != nil {
+			return err
+		}
+		fmt.Println(entry.String())
+		choice, err := input.InputEntryFieldChoice(entry)
+		if err != nil {
+			return err
+		}
+		switch choice {
+		case 1:
+			date, err := input.InputDate("Entry")
+			if err != nil {
+				return err
+			}
+			entry.SetDate(date)
+
+		case 2:
+			amountF64, err := input.InputAmountF64()
+			if err != nil {
+				return err
+			}
+			entry.SetAmount(amountF64)
+
+		case 3:
+			debitAccountRef, err := input.InputAccountRef(ledger, "debit")
+			if err != nil {
+				return err
+			}
+			if debitAccountRef == entry.GetCreditAccount().GetRef() {
+				return errors.New("Debit and Credit accounts must be different")
+			}
+			debitAccount, err := ledger.GetChart().GetAccountByRef(debitAccountRef)
+			if err != nil {
+				return err
+			}
+			entry.SetDebitAccount(debitAccount)
+
+		case 4:
+			creditAccountRef, err := input.InputAccountRef(ledger, "credit")
+			if err != nil {
+				return err
+			}
+			if entry.GetDebitAccount().GetRef() == creditAccountRef {
+				return errors.New("Debit and Credit accounts must be different")
+			}
+			creditAccount, err := ledger.GetChart().GetAccountByRef(creditAccountRef)
+			if err != nil {
+				return err
+			}
+			entry.SetCreditAccount(creditAccount)
+
+		case 5:
+			explanation, err := input.InputText("Explanation")
+			if err != nil {
+				return err
+			}
+			entry.SetExplanation(explanation)
+
+		default:
+			return errors.New("Invalid field")
+		}
+		err = database.UpdateEntry(db, entry)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Entry update successfuly")
+		fmt.Println(entry.String())
+		return nil
 
 	default:
-		var msg strings.Builder
-		msg.WriteString("Usage: ledger udpate entry\n")
-		msg.WriteString("=> Only entries not-posted may be updated\n")
-		return errors.New(msg.String())
+		return errors.New("Usage: ledger update entry")
 	}
-	return nil
 }

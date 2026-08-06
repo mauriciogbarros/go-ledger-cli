@@ -205,9 +205,9 @@ func GetEntriesBetweenDates(db *sql.DB, ledger *ledger.Ledger, fromDate time.Tim
 	if fromDate.IsZero() && toDate.IsZero() {
 		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries")
 	} else if fromDate.IsZero() {
-		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries WHERE date < ?", toDate.Format(time.DateOnly))
+		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries WHERE date <= ?", toDate.Format(time.DateOnly))
 	} else if toDate.IsZero() {
-		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries WHERE date > ?", fromDate.Format(time.DateOnly))
+		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries WHERE date >= ?", fromDate.Format(time.DateOnly))
 	} else { 
 		rows, err = db.Query("SELECT id, date, debit_account_id, credit_account_id, cents, explanation, posted FROM entries WHERE date BETWEEN ? AND ?", fromDate.Format(time.DateOnly), toDate.Format(time.DateOnly))
 	}
@@ -386,6 +386,34 @@ func AddEntry(db *sql.DB, entry *entry.Entry) error {
 		posted = 1
 	}
 	_, err = stmt.Exec(sId, date, sDrId, sCrId, amount, explanation, posted)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateEntry(db *sql.DB, entry *entry.Entry) error {
+	if entry == nil {
+		return errors.New("Entry - nil pointer dereference")
+	}
+	stmt, err := db.Prepare("UPDATE entries SET date=?, debit_account_id=?, credit_account_id=?, cents=?, explanation=?, posted=? WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	sId := entry.GetId().String()
+	date := entry.GetDate().Format(time.DateOnly)
+	sDrId := entry.GetDebitAccount().GetId().String()
+	sCrId := entry.GetCreditAccount().GetId().String()
+	amount := int(entry.GetAmount())
+	explanation := entry.GetExplanation()
+	posted := 0
+	if entry.IsPosted() {
+		posted = 1
+	}
+	_, err = stmt.Exec(date, sDrId, sCrId, amount, explanation, posted, sId)
 	if err != nil {
 		return err
 	}

@@ -101,22 +101,28 @@ func (e *Entry) GetExplanation() string {
 	return e.explanation
 }
 
-func (e *Entry) IsPosted() bool {
-	return e.isPosted
+func (e *Entry) SetDate(date time.Time) {
+	e.date = date
 }
 
-func (e *Entry) UpdateEntry(entry Entry) (*Entry, error) {
-	if e.isPosted {
-		return nil, errors.New("journal entry posted.")
-	}
+func (e *Entry) SetAmount(amountF64 float64) {
+	e.amount = currency.ConvertF64(amountF64)
+}
 
-	e.date = entry.date
-	e.debitAccount = entry.debitAccount
-	e.creditAccount = entry.creditAccount
-	e.amount = entry.amount
-	e.explanation = entry.explanation
+func (e *Entry) SetDebitAccount(debitAccount *account.Account) {
+	e.debitAccount = debitAccount
+}
 
-	return e, nil
+func (e *Entry) SetCreditAccount(creditAccount *account.Account) {
+	e.creditAccount = creditAccount
+}
+
+func (e *Entry) SetExplanation(explanation string) {
+	e.explanation = explanation
+}
+
+func (e *Entry) IsPosted() bool {
+	return e.isPosted
 }
 
 func (e *Entry) Post() error {
@@ -174,7 +180,7 @@ func (e *Entry) String() string {
 		output.WriteString("\n")
 		if i < len(words) {
 			explanation.Reset()
-			output.WriteString(strings.Repeat(" ", 15))
+			output.WriteString(strings.Repeat(" ", 14))
 			output.WriteString(" │ ")
 		}
 	}
