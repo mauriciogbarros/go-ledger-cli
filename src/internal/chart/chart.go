@@ -163,10 +163,11 @@ func (c *Chart) CreateAccount(accountTypeRefPrefix int, name string, description
 }
 
 func (c *Chart) String(refPrefix int) (string, error) {
-	width := 1 + 4 + 3 + 38 + 1
+	width := 4 + 3 + 38
 	var output strings.Builder
+	output.WriteString("\n")
 	output.WriteString(strings.Repeat(" ", (width - len(c.name))/ 2))
-	output.WriteString(fmt.Sprintf("%s\n", c.name))
+	fmt.Fprintf(&output, "%s\n", c.name)
 	output.WriteString(strings.Repeat("─", width))
 	output.WriteString("\n")
 	if refPrefix == 0 {
@@ -293,23 +294,26 @@ func (c *Chart) ViewAccountByRef(ref int) (string, error) {
 }
 
 func writeAccountTypeSection(output *strings.Builder, at *accountType.AccountType, width int) {
-	output.WriteString(" ")
+	widthSubtitle := width - 4 - 3
 	fmt.Fprintf(output, "%-*d", 4, at.GetRefPrefix())
-	output.WriteString(strings.Repeat(" ", (width-len(at.GetName())-1-4)/2))
+	output.WriteString(strings.Repeat(" ", 4))
+	output.WriteString(strings.Repeat(" ", (widthSubtitle - len(at.GetName())) / 2))
 	output.WriteString(at.GetName())
 	output.WriteString("\n")
-	output.WriteString(strings.Repeat("─", width))
+	output.WriteString(strings.Repeat("─", 4))
+	output.WriteString("─┬─")
+	output.WriteString(strings.Repeat("─", widthSubtitle))
 	output.WriteString("\n")
 	writeAccounts(output, *at.GetAccounts())
 }
 
 func writeAccounts(output *strings.Builder, accounts []*account.Account) {
 	if len(accounts) == 0 {
-		output.WriteString(strings.Repeat(" ", 1+4+3))
+		output.WriteString(strings.Repeat(" ", 4 + 3))
 		output.WriteString("* No accounts\n")
 	} else {
 		for _, a := range accounts {
-			fmt.Fprintf(output, " %d   %s\n", a.GetRef(), a.GetName())
+			fmt.Fprintf(output, "%d │ %s\n", a.GetRef(), a.GetName())
 		}
 	}
 }

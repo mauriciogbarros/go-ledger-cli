@@ -360,9 +360,9 @@ func viewChartHelp() {
 	var msg strings.Builder
 	msg.WriteString("View chart of acccounts\n")
 	msg.WriteString("Argument options:\n")
-	msg.WriteString("- <empty>: view the complete chart of accounts\n")
-	msg.WriteString("- help: show this help\n")
-	msg.WriteString("- type: view the chart for a specific account type\n")
+	msg.WriteString("<empty> => view the complete chart of accounts\n")
+	msg.WriteString("help    => show this help\n")
+	msg.WriteString("type    => view the chart for a specific account type\n")
 	fmt.Println(msg.String())
 }
 
