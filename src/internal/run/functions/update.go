@@ -108,7 +108,6 @@ func updateEntry(db *sql.DB, ledger *ledger.Ledger, args []string) error {
 	switch len(args) {
 	case 1:
 		fromDate, toDate, err := input.InputEntryYearMonth()
-		fmt.Println(fromDate, toDate)
 		if err != nil {
 			return err
 		}

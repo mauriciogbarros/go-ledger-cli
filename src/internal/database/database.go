@@ -442,6 +442,32 @@ func UpdateEntry(db *sql.DB, entry *entry.Entry) error {
 	return nil
 }
 
+func DeleteAccount(db *sql.DB, id id.Id) error {
+	stmt, err := db.Prepare("DELETE FROM accounts WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(id.String())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteEntry(db *sql.DB, id id.Id) error {
+	stmt, err := db.Prepare("DELETE FROM entries WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(id.String())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func initializeAccountTypes(db *sql.DB) error {
 	var stmt = `CREATE TABLE IF NOT EXISTS account_types (
 		id TEXT PRIMARY KEY,
